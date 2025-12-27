@@ -2,6 +2,7 @@
 import geopandas as gpd
 import xarray as xr
 import pandas as pd
+import time
 from forecasting.config import training_start, training_end
 
 try:
@@ -24,6 +25,17 @@ def get_bounds_zone(zone: str):
     return zone_gdf.total_bounds  # (minx, miny, maxx, maxy)
 
 
+def open_era5_zarr(url, retries=3, delay=3):
+    for attempt in range(retries):
+        try:
+            return xr.open_dataset(url, engine="zarr")
+        except Exception as e:
+            if attempt == retries - 1:
+                raise
+            print(f"ERA5 open failed (attempt {attempt+1}), retrying...")
+            time.sleep(delay)
+
+
 def load_era5(zone: str) -> pd.DataFrame:
     """
     Load ERA5 data for training the model, same length as ENTSOE price data
@@ -34,10 +46,13 @@ def load_era5(zone: str) -> pd.DataFrame:
     min_lon, min_lat, max_lon, max_lat = bounds
 
     # Token
-    ds = xr.open_dataset(
-        f"https://edh:{ERA5_TOKEN}@data.earthdatahub.destine.eu/era5/reanalysis-era5-single-levels-v0.zarr",
-        engine="zarr",
-    )
+    url = f"https://edh:{ERA5_TOKEN}@data.earthdatahub.destine.eu/era5/reanalysis-era5-single-levels-v0.zarr"
+
+    ds = open_era5_zarr(url)
+    # ds = xr.open_dataset(
+    #     f"https://edh:{ERA5_TOKEN}@data.earthdatahub.destine.eu/era5/reanalysis-era5-single-levels-v0.zarr",
+    #     engine="zarr",
+    # )
 
     era5_vars_units = {"t2m": "°C", "ssrd": "J/m²", "u100": "m/s", "v100": "m/s"}
     df = pd.DataFrame()
