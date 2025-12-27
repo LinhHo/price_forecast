@@ -4,6 +4,11 @@ import xarray as xr
 import pandas as pd
 from forecasting.config import training_start, training_end
 
+try:
+    from forecasting.config_local import ERA5_TOKEN
+except ImportError:
+    from forecasting.config import ERA5_TOKEN
+
 
 def get_bounds_zone(zone: str):
     # Load the world GeoJSON from electricitymap (app.electricitymaps.com)
@@ -29,10 +34,8 @@ def load_era5(zone: str) -> pd.DataFrame:
     min_lon, min_lat, max_lon, max_lat = bounds
 
     # Token
-    PAT = "edh_pat_b77c41bcb90bdb510d6a639c08c8dbc7d056abb61796d05e1d485430753151233fa487ad706038e08b689309ebcc05e3"  # "your_personal_access_token"
-
     ds = xr.open_dataset(
-        f"https://edh:{PAT}@data.earthdatahub.destine.eu/era5/reanalysis-era5-single-levels-v0.zarr",
+        f"https://edh:{ERA5_TOKEN}@data.earthdatahub.destine.eu/era5/reanalysis-era5-single-levels-v0.zarr",
         engine="zarr",
     )
 

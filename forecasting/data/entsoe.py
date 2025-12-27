@@ -5,6 +5,11 @@ import xml.etree.ElementTree as ET
 import requests
 from forecasting.config import training_start, training_end
 
+try:
+    from forecasting.config_local import ENTSOE_TOKEN
+except ImportError:
+    from forecasting.config import ENTSOE_TOKEN
+
 
 def load_prices(zone: str, is_training: bool = True) -> pd.DataFrame:
     """
@@ -30,7 +35,7 @@ def load_prices(zone: str, is_training: bool = True) -> pd.DataFrame:
         f"&in_Domain={zone_code}"
         f"&periodStart={time_start}"
         f"&periodEnd={time_end}"
-        f"&securityToken=YOUR_TOKEN"
+        f"&securityToken={ENTSOE_TOKEN}"
     )
 
     response = requests.get(url)
