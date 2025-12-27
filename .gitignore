@@ -1,0 +1,74 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+
+# Virtual environments
+venv/
+.env/
+.venv/
+
+# =========================
+# Jupyter / Colab
+# =========================
+.ipynb_checkpoints/
+*.ipynb
+
+# Colab temporary files
+content/
+.datalab/
+
+# =========================
+# PyTorch / Lightning / Forecasting
+# =========================
+*.ckpt
+*.pt
+*.pth
+lightning_logs/
+checkpoints/
+
+# =========================
+# Data (DO NOT COMMIT)
+# =========================
+data/
+datasets/
+*.csv
+*.parquet
+*.zarr
+
+# =========================
+# Outputs / Figures
+# =========================
+output/
+outputs/
+figures/
+*.png
+*.jpg
+*.jpeg
+*.pdf
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# OS / Editors
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# =========================
+# Secrets (VERY IMPORTANT)
+# =========================
+*.env
+secrets.py
+config_local.py
