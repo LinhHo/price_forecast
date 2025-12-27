@@ -11,6 +11,9 @@ from forecasting.features.build_features import (
     add_holiday_feature,
     add_zone,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def prepare_forecast_df(zone, last_time_idx):
@@ -36,7 +39,14 @@ def predict_next_24h(zone: str):
     df = prepare_forecast_df(zone, last_time_idx)
     assert df["time_idx"].is_monotonic_increasing
 
-    training = TimeSeriesDataSet.load(AUTOMATIC_DIR/ f"{zone}_training_dataset.pkl")
+    logger.info(
+        "Starting predicting | zone=%s | start=%s | end=%s",
+        zone,
+        df.index.min(),
+        df.index.max(),
+    )
+
+    training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset.pkl")
 
     # predict
     ### Load the trained model and predict ====================================
@@ -50,7 +60,9 @@ def predict_next_24h(zone: str):
 
     # load the trained model
     # Less safe, Only do this for your own checkpoints, Never for downloaded models
-    tft = TemporalFusionTransformer.load_from_checkpoint(AUTOMATIC_DIR / "tft_price_model.ckpt", weights_only=False)
+    tft = TemporalFusionTransformer.load_from_checkpoint(
+        AUTOMATIC_DIR / "tft_price_model.ckpt", weights_only=False
+    )
 
     # Create dataloader
     prediction_dataloader = prediction_dataset.to_dataloader(
@@ -95,6 +107,6 @@ def predict_next_24h(zone: str):
     plt.ylabel("Price (€/MWh)")
     plt.title("Day-Ahead Price Forecast")
     plt.grid(True)
-    plt.save_fig(OUTPUT_DIR/"Prediction.jpeg")
+    plt.save_fig(OUTPUT_DIR / "Prediction.jpeg")
 
     return pred_df  # model.predict(...)

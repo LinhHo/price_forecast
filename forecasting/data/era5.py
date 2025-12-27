@@ -10,6 +10,10 @@ try:
 except ImportError:
     from forecasting.config import ERA5_TOKEN
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def get_bounds_zone(zone: str):
     # Load the world GeoJSON from electricitymap (app.electricitymaps.com)
@@ -32,7 +36,7 @@ def open_era5_zarr(url, retries=3, delay=3):
         except Exception as e:
             if attempt == retries - 1:
                 raise
-            print(f"ERA5 open failed (attempt {attempt+1}), retrying...")
+            logger.error(f"ERA5 open failed (attempt {attempt+1}), retrying...")
             time.sleep(delay)
 
 

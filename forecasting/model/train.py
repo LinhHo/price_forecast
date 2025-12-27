@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
+
 # import torch.nn as nn
 import torch.nn.functional as F
+
 # import torch.optim as optim
 from pytorch_forecasting import TimeSeriesDataSet, TemporalFusionTransformer
 from pytorch_forecasting.metrics import QuantileLoss
@@ -18,6 +20,9 @@ from forecasting.features.build_features import (
     add_zone,
 )
 from forecasting.dataset.timeseries import build_tft_dataset
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def prepare_training_df(zone):
@@ -38,6 +43,13 @@ def prepare_training_df(zone):
 def train_model(zone):
     df = prepare_training_df(zone)
     training = build_tft_dataset(df, training=True)
+
+    logger.info(
+        "Starting training | zone=%s | start=%s | end=%s",
+        zone,
+        df.index.min(),
+        df.index.max(),
+    )
 
     # save metadata last_time_idx to keep continuity for prediction
     last_time_idx = df["time_idx"].max()
@@ -84,12 +96,22 @@ def train_model(zone):
 
     # compute metrics
     mae = mean_absolute_error(y_true, y_pred)
-    print("Validation MAE:", mae)
-    print("Range of true values:", np.min(y_true), "to", np.max(y_true))
-    print(
+    rmse = np.sqrt(np.mean((y_true - y_pred) ** 2))
+    smape = np.mean(
+        2 * np.abs(y_pred - y_true) / (np.abs(y_true) + np.abs(y_pred) + 1e-8)
+    )
+    logger.info(
+        "Training metrics | zone=%s | MAE=%.3f | RMSE=%.3f, SMAPE=%.3f",
+        zone,
+        mae,
+        rmse,
+        smape,
+    )
+    logger.info("Range of true values:", np.min(y_true), "to", np.max(y_true))
+    logger.info(
         f"Error is about {mae / np.max(y_true) *100} to {mae / np.min(y_true) * 100} % of the range"
     )
-    print(
+    logger.info(
         f"Error is about {mae / 120 *100} to {mae / 50 * 100} % if prices are between 50 and 120 EUR/MWh"
     )
 

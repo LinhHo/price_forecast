@@ -10,6 +10,10 @@ try:
 except ImportError:
     from forecasting.config import ENTSOE_TOKEN
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def load_prices(zone: str, is_training: bool = True) -> pd.DataFrame:
     """
@@ -23,7 +27,9 @@ def load_prices(zone: str, is_training: bool = True) -> pd.DataFrame:
         end_dt = date.today()
         start_dt = end_dt - timedelta(days=7)
 
-    print("======================== time_start", time_start, time_start.dtype())
+    logger.info(
+        f"========================ENTSO-E time_start, {time_start}, {time_start.dtype()}"
+    )
     time_start = start_dt.strftime("%Y%m%d0000")
     time_end = end_dt.strftime("%Y%m%d0000")
 
