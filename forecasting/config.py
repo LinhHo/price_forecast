@@ -1,11 +1,36 @@
 from pathlib import Path
 from datetime import date
 
+# config.py
+import os
+from dotenv import load_dotenv
+
+from pathlib import Path
+
+# This file is at: price_forecast/forecasting/config.py
+# Level 0: config.py
+# Level 1: forecasting/
+# Level 2: price_forecast/ (This is your Root)
+
+# Get the directory where config.py is located
+BASE_DIR = Path(__file__).resolve().parent  # Result: .../forecasting/
+# project_root = directory containing "forecasting/"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]  # Result: .../price_forecast/
+
+# Try loading from current directory first, then fallback to environment
+# Look for .env in the same directory as config.py
+# Since your .env is in the root, use PROJECT_ROOT
+load_dotenv(PROJECT_ROOT / ".env")
+
+
+class Config:
+    ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
+    ERA5_TOKEN = os.getenv("ERA5_TOKEN")
+
+
 training_start = date(2024, 1, 1)
 training_end = date(2024, 3, 1)
 
-# project_root = directory containing "forecasting/"
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 FORECASTING_DIR = PROJECT_ROOT / "forecasting"
 OUTPUT_DIR = FORECASTING_DIR / "output"
