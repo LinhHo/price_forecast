@@ -5,10 +5,22 @@ import xml.etree.ElementTree as ET
 import requests
 from forecasting.config import training_start, training_end
 
+import os
+
 try:
-    from forecasting.config_local import ENTSOE_TOKEN
+    # Local development (ignored by git)
+    from forecasting.config import Config
+
+    ENTSOE_TOKEN = Config.ENTSOE_TOKEN
 except ImportError:
-    from forecasting.config import ENTSOE_TOKEN
+    # Colab / server / CI
+    ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
+
+if not ENTSOE_TOKEN:
+    raise RuntimeError(
+        "ENTSOE_TOKEN not found. " "Set it via environment variable or config_local.py"
+    )
+
 
 import logging
 

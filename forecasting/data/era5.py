@@ -3,12 +3,23 @@ import geopandas as gpd
 import xarray as xr
 import pandas as pd
 import time
+import os
 from forecasting.config import training_start, training_end
 
 try:
-    from forecasting.config_local import ERA5_TOKEN
+    # Local development (ignored by git)
+    from forecasting.config import Config
+
+    ERA5_TOKEN = Config.ERA5_TOKEN
 except ImportError:
-    from forecasting.config import ERA5_TOKEN
+    # Colab / server / CI
+    ERA5_TOKEN = os.getenv("ERA5_TOKEN")
+
+if not ERA5_TOKEN:
+    raise RuntimeError(
+        "ERA5_TOKEN not found. " "Set it via environment variable or config_local.py"
+    )
+
 
 import logging
 
