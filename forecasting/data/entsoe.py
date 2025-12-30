@@ -7,7 +7,18 @@ from forecasting.config import training_start, training_end
 
 import os
 
-ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
+import os
+
+
+def get_entsoe_token() -> str:
+    token = os.getenv("ENTSOE_TOKEN")
+    if not token:
+        raise RuntimeError("ENTSOE_TOKEN not set")
+
+    return token.strip().strip('"').strip("'")
+
+
+# ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
 # try:
 #     # Colab / server / CI
 #     ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
@@ -17,14 +28,10 @@ ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
 
 #     ENTSOE_TOKEN = Config.ENTSOE_TOKEN
 
-# Clean token, avoid extra spaces or quotes
-if ENTSOE_TOKEN:
-    ENTSOE_TOKEN = ENTSOE_TOKEN.strip().strip('"').strip("'")
-
-if not ENTSOE_TOKEN:
-    raise RuntimeError(
-        "ENTSOE_TOKEN not found. " "Set it via environment variable or config_local.py"
-    )
+# if not ENTSOE_TOKEN:
+#     raise RuntimeError(
+#         "ENTSOE_TOKEN not found. " "Set it via environment variable or config_local.py"
+#     )
 
 
 import logging
@@ -51,6 +58,7 @@ def load_prices(zone: str, is_training: bool = True) -> pd.DataFrame:
     time_end = end_dt.strftime("%Y%m%d0000")
 
     zone_code = f"10Y{zone}----------L"
+    entsoe_token = get_entsoe_token()
 
     url = (
         "https://web-api.tp.entsoe.eu/api"
@@ -59,7 +67,7 @@ def load_prices(zone: str, is_training: bool = True) -> pd.DataFrame:
         f"&in_Domain={zone_code}"
         f"&periodStart={time_start}"
         f"&periodEnd={time_end}"
-        f"&securityToken={ENTSOE_TOKEN}"
+        f"&securityToken={entsoe_token}"
     )
 
     response = requests.get(url)
