@@ -7,14 +7,15 @@ from forecasting.config import training_start, training_end
 
 import os
 
-try:
-    # Colab / server / CI
-    ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
-except ImportError:
-    # Local development (ignored by git)
-    from forecasting.config import Config
+ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
+# try:
+#     # Colab / server / CI
+#     ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
+# except ImportError:
+#     # Local development (ignored by git)
+#     from forecasting.config import Config
 
-    ENTSOE_TOKEN = Config.ENTSOE_TOKEN
+#     ENTSOE_TOKEN = Config.ENTSOE_TOKEN
 
 if not ENTSOE_TOKEN:
     raise RuntimeError(

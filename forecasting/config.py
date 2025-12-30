@@ -13,7 +13,7 @@ from pathlib import Path
 # Level 2: price_forecast/ (This is your Root)
 
 # Get the directory where config.py is located
-BASE_DIR = Path(__file__).resolve().parent[0]  # Result: .../forecasting/
+BASE_DIR = Path(__file__).resolve().parent  # Result: .../forecasting/
 # project_root = directory containing "forecasting/"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]  # Result: .../price_forecast/
 

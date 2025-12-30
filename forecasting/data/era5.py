@@ -6,13 +6,15 @@ import time
 import os
 from forecasting.config import training_start, training_end
 
-try:
-    ERA5_TOKEN = os.getenv("ERA5_TOKEN")
-except ImportError:
-    # Local development (ignored by git)
-    from forecasting.config import Config
+ERA5_TOKEN = os.getenv("ERA5_TOKEN")
 
-    ERA5_TOKEN = Config.ERA5_TOKEN
+# try:
+#     ERA5_TOKEN = os.getenv("ERA5_TOKEN")
+# except ImportError:
+#     # Local development (ignored by git)
+#     from forecasting.config import Config
+
+#     ERA5_TOKEN = Config.ERA5_TOKEN
 
 if not ERA5_TOKEN:
     raise RuntimeError(
