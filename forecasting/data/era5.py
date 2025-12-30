@@ -15,22 +15,6 @@ def get_era5_token() -> str:
     return token.strip().strip('"').strip("'")
 
 
-# ERA5_TOKEN = os.getenv("ERA5_TOKEN")
-
-# try:
-#     ERA5_TOKEN = os.getenv("ERA5_TOKEN")
-# except ImportError:
-#     # Local development (ignored by git)
-#     from forecasting.config import Config
-
-#     ERA5_TOKEN = Config.ERA5_TOKEN
-
-# if not ERA5_TOKEN:
-#     raise RuntimeError(
-#         "ERA5_TOKEN not found. " "Set it via environment variable or config_local.py"
-#     )
-
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -75,10 +59,6 @@ def load_era5(zone: str) -> pd.DataFrame:
     url = f"https://edh:{era5_token}@data.earthdatahub.destine.eu/era5/reanalysis-era5-single-levels-v0.zarr"
 
     ds = open_era5_zarr(url)
-    # ds = xr.open_dataset(
-    #     f"https://edh:{ERA5_TOKEN}@data.earthdatahub.destine.eu/era5/reanalysis-era5-single-levels-v0.zarr",
-    #     engine="zarr",
-    # )
 
     era5_vars_units = {"t2m": "°C", "ssrd": "J/m²", "u100": "m/s", "v100": "m/s"}
     df = pd.DataFrame()

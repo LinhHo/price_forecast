@@ -18,22 +18,6 @@ def get_entsoe_token() -> str:
     return token.strip().strip('"').strip("'")
 
 
-# ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
-# try:
-#     # Colab / server / CI
-#     ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
-# except ImportError:
-#     # Local development (ignored by git)
-#     from forecasting.config import Config
-
-#     ENTSOE_TOKEN = Config.ENTSOE_TOKEN
-
-# if not ENTSOE_TOKEN:
-#     raise RuntimeError(
-#         "ENTSOE_TOKEN not found. " "Set it via environment variable or config_local.py"
-#     )
-
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -52,7 +36,7 @@ def load_prices(zone: str, is_training: bool = True) -> pd.DataFrame:
         start_dt = end_dt - timedelta(days=7)
 
     logger.info(
-        f"========================ENTSO-E time_start, {time_start}, {time_start.dtype()}"
+        f"========================ENTSO-E time_start, {start_dt}, {start_dt.dtype()}"
     )
     time_start = start_dt.strftime("%Y%m%d0000")
     time_end = end_dt.strftime("%Y%m%d0000")
