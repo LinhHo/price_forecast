@@ -17,6 +17,10 @@ ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
 
 #     ENTSOE_TOKEN = Config.ENTSOE_TOKEN
 
+# Clean token, avoid extra spaces or quotes
+if ENTSOE_TOKEN:
+    ENTSOE_TOKEN = ENTSOE_TOKEN.strip().strip('"').strip("'")
+
 if not ENTSOE_TOKEN:
     raise RuntimeError(
         "ENTSOE_TOKEN not found. " "Set it via environment variable or config_local.py"

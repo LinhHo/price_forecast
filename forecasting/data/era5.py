@@ -41,7 +41,8 @@ def get_bounds_zone(zone: str):
     return zone_gdf.total_bounds  # (minx, miny, maxx, maxy)
 
 
-def open_era5_zarr(url, retries=3, delay=3):
+def open_era5_zarr(url, retries=5, delay=3):
+    print("Opening ERA5 Zarr dataset with ERA5_TOKEN...", f"{ERA5_TOKEN[:5]}***")
     for attempt in range(retries):
         try:
             return xr.open_dataset(url, engine="zarr")
@@ -60,6 +61,10 @@ def load_era5(zone: str) -> pd.DataFrame:
     """
     bounds = get_bounds_zone(zone)
     min_lon, min_lat, max_lon, max_lat = bounds
+
+    # Clean token, avoid extra spaces or quotes
+    if ERA5_TOKEN:
+        ERA5_TOKEN = ERA5_TOKEN.strip().strip('"').strip("'")
 
     # Token
     url = f"https://edh:{ERA5_TOKEN}@data.earthdatahub.destine.eu/era5/reanalysis-era5-single-levels-v0.zarr"
