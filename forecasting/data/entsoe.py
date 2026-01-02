@@ -3,7 +3,7 @@ from dateutil.parser import isoparse
 from datetime import timedelta, date
 import xml.etree.ElementTree as ET
 import requests
-from forecasting.config import training_start, training_end
+from forecasting.config import TRAINING_START, TRAINING_END
 
 import os
 
@@ -29,15 +29,12 @@ def load_prices(zone: str, is_training: bool = True) -> pd.DataFrame:
     """
 
     if is_training:
-        start_dt = training_start
-        end_dt = training_end
+        start_dt = TRAINING_START
+        end_dt = TRAINING_END
     else:
         end_dt = date.today()
         start_dt = end_dt - timedelta(days=7)
 
-    logger.info(
-        f"========================ENTSO-E time_start, {start_dt}, {start_dt.dtype()}"
-    )
     time_start = start_dt.strftime("%Y%m%d0000")
     time_end = end_dt.strftime("%Y%m%d0000")
 

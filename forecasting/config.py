@@ -1,7 +1,5 @@
 from pathlib import Path
-from datetime import date
-
-# config.py
+import datetime as dt
 import os
 from dotenv import load_dotenv
 
@@ -28,8 +26,8 @@ class Config:
     ERA5_TOKEN = os.getenv("ERA5_TOKEN")
 
 
-training_start = date(2024, 1, 1)
-training_end = date(2024, 3, 1)
+TRAINING_START = dt.datetime(2024, 1, 1, 0, 0)
+TRAINING_END = dt.datetime(2024, 3, 1, 0, 0)
 
 
 FORECASTING_DIR = PROJECT_ROOT / "forecasting"

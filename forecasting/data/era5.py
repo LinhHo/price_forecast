@@ -4,7 +4,7 @@ import xarray as xr
 import pandas as pd
 import time
 import os
-from forecasting.config import training_start, training_end
+from forecasting.config import TRAINING_START, TRAINING_END
 
 
 def get_era5_token() -> str:
@@ -67,7 +67,7 @@ def load_era5(zone: str) -> pd.DataFrame:
         da = ds[v].sel(
             latitude=slice(max_lat, min_lat),
             longitude=slice(min_lon, max_lon),
-            valid_time=slice(training_start, training_end),
+            valid_time=slice(TRAINING_START, TRAINING_END),
         )
         df[v] = da.mean(dim=["latitude", "longitude"]).to_series()
         df[v].attrs["units"] = era5_vars_units[v]
