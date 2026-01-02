@@ -29,6 +29,9 @@ class Config:
 TRAINING_START = dt.datetime(2024, 1, 1, 0, 0)
 TRAINING_END = dt.datetime(2024, 3, 1, 0, 0)
 
+BATCH_SIZE = 64
+MAX_EPOCHS = 10  # 30
+
 
 FORECASTING_DIR = PROJECT_ROOT / "forecasting"
 OUTPUT_DIR = FORECASTING_DIR / "output"
