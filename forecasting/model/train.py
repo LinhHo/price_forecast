@@ -42,7 +42,7 @@ def prepare_training_df(zone):
 
 def train_model(zone):
     df = prepare_training_df(zone)
-    training = build_tft_dataset(df, training=True)
+    training = build_tft_dataset(df, is_training=True)
 
     logger.info(
         "Starting training | zone=%s | start=%s | end=%s",
@@ -66,7 +66,6 @@ def train_model(zone):
     )
 
     ### train the model (core) ================================
-
 
     # validation set
     validation = TimeSeriesDataSet.from_dataset(
