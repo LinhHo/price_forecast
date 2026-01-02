@@ -11,7 +11,7 @@ from pytorch_forecasting.metrics import QuantileLoss
 from lightning.pytorch import Trainer
 from sklearn.metrics import mean_absolute_error
 
-from forecasting.config import AUTOMATIC_DIR, OUTPUT_DIR
+from forecasting.config import AUTOMATIC_DIR, OUTPUT_DIR, BATCH_SIZE, MAX_EPOCHS
 from forecasting.data.era5 import load_era5
 from forecasting.data.entsoe import load_prices
 from forecasting.features.build_features import (
@@ -67,8 +67,6 @@ def train_model(zone):
 
     ### train the model (core) ================================
 
-    batch_size = 64
-    max_epochs = 10  # 30
 
     # validation set
     validation = TimeSeriesDataSet.from_dataset(
@@ -76,15 +74,15 @@ def train_model(zone):
     )
 
     train_dataloader = training.to_dataloader(
-        train=True, batch_size=batch_size, num_workers=4
+        train=True, batch_size=BATCH_SIZE, num_workers=4
     )
 
     val_dataloader = validation.to_dataloader(
-        train=False, batch_size=batch_size, num_workers=4
+        train=False, batch_size=BATCH_SIZE, num_workers=4
     )
 
     # Train the model
-    trainer = Trainer(max_epochs=max_epochs)
+    trainer = Trainer(max_epochs=MAX_EPOCHS)
     trainer.fit(tft, train_dataloader, val_dataloader)
 
     # Validation metrics

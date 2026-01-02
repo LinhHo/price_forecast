@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
 
-from forecasting.config import AUTOMATIC_DIR, OUTPUT_DIR
+from forecasting.config import AUTOMATIC_DIR, OUTPUT_DIR, BATCH_SIZE
 from forecasting.data.open_meteo import load_forecast
 from forecasting.data.entsoe import load_prices
 from forecasting.features.build_features import (
@@ -66,7 +66,7 @@ def predict_next_24h(zone: str):
 
     # Create dataloader
     prediction_dataloader = prediction_dataset.to_dataloader(
-        train=False, batch_size=64, num_workers=4
+        train=False, batch_size=BATCH_SIZE, num_workers=4
     )
 
     # Generate predictions. Point forecasts (median, default)

@@ -75,7 +75,7 @@ def load_prices(zone: str, is_training: bool = True) -> pd.DataFrame:
 
                 records.append(
                     {
-                        "timestamp": pd.Timestamp(timestamp, tz="UTC"),
+                        "timestamp": pd.Timestamp(timestamp).tz_convert("UTC"),
                         "price_eur_per_mwh": price,
                     }
                 )
