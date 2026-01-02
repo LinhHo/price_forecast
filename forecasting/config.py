@@ -1,9 +1,9 @@
 from pathlib import Path
 import datetime as dt
 import os
+import logging
 from dotenv import load_dotenv
 
-from pathlib import Path
 
 # This file is at: price_forecast/forecasting/config.py
 # Level 0: config.py
@@ -40,3 +40,16 @@ AUTOMATIC_DIR = FORECASTING_DIR / "automatic"
 # create folders if needed
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 AUTOMATIC_DIR.mkdir(parents=True, exist_ok=True)
+
+
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_DIR / "app.log"),
+        logging.StreamHandler(),  # still prints to console
+    ],
+)

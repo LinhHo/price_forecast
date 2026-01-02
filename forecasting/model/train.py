@@ -104,14 +104,25 @@ def train_model(zone):
         rmse,
         smape,
     )
-    logger.info("Range of true values:", np.min(y_true), "to", np.max(y_true))
+    y_min = float(np.min(y_true))
+    y_max = float(np.max(y_true))
     logger.info(
-        f"Error is about {mae / np.max(y_true) *100} to {mae / np.min(y_true) * 100} % of the range"
-    )
-    logger.info(
-        f"Error is about {mae / 120 *100} to {mae / 50 * 100} % if prices are between 50 and 120 EUR/MWh"
+        "Range of true values: %.2f to %.2f",
+        y_min,
+        y_max,
     )
 
+    logger.info(
+        "Error is about %.2f%% to %.2f%% of the range",
+        mae / y_max * 100,
+        mae / y_min * 100,
+    )
+
+    logger.info(
+        "Error is about %.2f%% to %.2f%% if prices are between 50 and 120 EUR/MWh",
+        mae / 120 * 100,
+        mae / 50 * 100,
+    )
     # visualize validation performance
     plt.figure(figsize=(10, 4))
     plt.plot(y_true[:200], label="Actual")
