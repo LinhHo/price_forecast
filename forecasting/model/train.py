@@ -121,7 +121,9 @@ def train_model(zone):
     plt.savefig(OUTPUT_DIR / "Validation_training.jpeg")
 
     # save model
-    training.to_pickle(AUTOMATIC_DIR / f"{zone}_training_dataset.pkl")
+    training.save(
+        AUTOMATIC_DIR / f"{zone}_training_dataset"
+    )  # built-in save function for TimeSeriesDataSet PyTorch dataset
     tft.save_checkpoint(AUTOMATIC_DIR / "tft_price_model.ckpt")  # save_model(tft)
 
     return tft

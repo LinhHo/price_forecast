@@ -46,7 +46,7 @@ def predict_next_24h(zone: str):
         df.index.max(),
     )
 
-    training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset.pkl")
+    training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset")
 
     # predict
     ### Load the trained model and predict ====================================
