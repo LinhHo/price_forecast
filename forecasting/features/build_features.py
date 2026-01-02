@@ -20,7 +20,9 @@ def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
 def add_holiday_feature(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["is_holiday"] = (
-        df.index.to_series().apply(lambda x: (x.month, x.day) in HOLIDAYS).astype(int)
+        df.index.to_series()
+        .apply(lambda x: "yes" if (x.month, x.day) in HOLIDAYS else "no")
+        .astype("category")
     )
     return df
 
