@@ -140,12 +140,14 @@ def train_model(zone):
 
     interpretation = tft.interpret_output(raw_predictions, reduction="sum")
 
-    fig = tft.plot_interpretation(interpretation)
-    fig.savefig(
-        OUTPUT_DIR / "tft_interpretation.png",
-        dpi=200,
-        bbox_inches="tight",
-    )
+    figs = tft.plot_interpretation(interpretation)  # return a dict
+
+    for name, fig in figs.items():
+        fig.savefig(
+            OUTPUT_DIR / f"tft_interpretation_{name}.png",
+            dpi=200,
+            bbox_inches="tight",
+        )
 
     # save model
     training.save(
