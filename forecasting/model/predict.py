@@ -40,7 +40,7 @@ def prepare_forecast_df(zone, last_time_idx):
 
 def predict_next_24h(zone: str):
     # load last_time_idx from training
-    last_time_idx = np.load(f"artifacts/{zone}_last_time_idx.npy")
+    last_time_idx = np.load(AUTOMATIC_DIR / f"{zone}_last_time_idx.npy")
 
     df = prepare_forecast_df(zone, last_time_idx)
     assert df["time_idx"].is_monotonic_increasing
