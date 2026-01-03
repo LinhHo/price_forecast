@@ -11,7 +11,7 @@ import requests
 from forecasting.data.era5 import get_bounds_zone
 
 
-def load_forecast(zone: str, start_time_idx: int) -> pd.DataFrame:
+def load_forecast(zone: str) -> pd.DataFrame:
     """
     Returns past 7 days + next 24h weather with correct time_idx continuation
     """
@@ -55,7 +55,5 @@ def load_forecast(zone: str, start_time_idx: int) -> pd.DataFrame:
     )
 
     df = df[["t2m", "ssrd", "u100", "v100"]]
-
-    df["time_idx"] = np.arange(start_time_idx, start_time_idx + len(df))
 
     return df
