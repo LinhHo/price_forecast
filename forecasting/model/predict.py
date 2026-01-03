@@ -3,7 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
 
-from forecasting.config import AUTOMATIC_DIR, OUTPUT_DIR, BATCH_SIZE
+from forecasting.config import (
+    AUTOMATIC_DIR,
+    OUTPUT_DIR,
+    BATCH_SIZE,
+    MAX_PREDICTION_LENGTH,
+    MAX_ENCODER_LENGTH,
+)
 from forecasting.data.open_meteo import load_forecast
 from forecasting.data.entsoe import load_prices
 from forecasting.features.build_features import (
@@ -99,13 +105,22 @@ def predict_next_24h(zone: str):
     # zone = x["groups"]["zone"].cpu().numpy()
     # pred_df["zone"] = np.repeat(zone, horizon)
 
-    # pred_df["timestamp"] = df.index[-max_prediction_length:]
+    # Plot timeseries of past prices and forecast with different colours
+    prediction_df = df.copy()["price_eur_per_mwh"].to_frame()
+    prediction_df["label"] = "ENTSOE price"
+    prediction_df.loc[prediction_df.index[-MAX_PREDICTION_LENGTH:], "label"] = (
+        "TFT forecast"
+    )
+    prediction_df.loc[
+        prediction_df.index[-MAX_PREDICTION_LENGTH:], "price_eur_per_mwh"
+    ] = pred_df["y_pred"].values
 
-    plt.figure(figsize=(10, 4))
-    plt.plot(pred_df["timestamp"], pred_df["y_pred"], marker="o")
-    plt.xlabel("Time Index")
-    plt.ylabel("Price (€/MWh)")
-    plt.title("Day-Ahead Price Forecast")
+    plt.figure(figsize=(12, 4))
+
+    for label, g in prediction_df.groupby("label"):
+        plt.plot(g.index, g["price_eur_per_mwh"], label=label)
+
+    plt.legend()
     plt.grid(True)
     plt.save_fig(OUTPUT_DIR / "Prediction.jpeg")
 

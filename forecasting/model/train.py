@@ -81,7 +81,11 @@ def train_model(zone):
     )
 
     # Train the model
-    trainer = Trainer(max_epochs=MAX_EPOCHS)
+    trainer = Trainer(
+        accelerator="gpu" if torch.cuda.is_available() else "cpu",
+        devices=1,
+        max_epochs=MAX_EPOCHS,
+    )
     trainer.fit(tft, train_dataloader, val_dataloader)
 
     # Validation metrics
@@ -130,6 +134,18 @@ def train_model(zone):
     plt.legend()
     plt.title(f"Validation performance MAE {mae}")
     plt.savefig(OUTPUT_DIR / "Validation_training.jpeg")
+
+    # Plot and save interpretation of the TFT model
+    raw_predictions, x, *rest = tft.predict(val_dataloader, mode="raw", return_x=True)
+
+    interpretation = tft.interpret_output(raw_predictions, reduction="sum")
+
+    fig = tft.plot_interpretation(interpretation)
+    fig.savefig(
+        OUTPUT_DIR / "tft_interpretation.png",
+        dpi=200,
+        bbox_inches="tight",
+    )
 
     # save model
     training.save(

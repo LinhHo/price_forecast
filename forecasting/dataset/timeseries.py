@@ -5,15 +5,14 @@ import torch.nn.functional as F
 import torch.optim as optim
 from pytorch_forecasting.data import GroupNormalizer
 from pytorch_forecasting import TimeSeriesDataSet
+from forecasting.config import MAX_PREDICTION_LENGTH, MAX_ENCODER_LENGTH
 
 
 def build_tft_dataset(
     df: pd.DataFrame,
     is_training=True,
-    max_encoder_length=168,  # use past 7 days, electricity prices have weekly pattern
-    max_prediction_length=24,  # predict next 24 hours
 ):
-    
+
     # Features for TFT setup (unchanged later)
     target = "price_eur_per_mwh"
     time_varying_known_reals = [
@@ -45,15 +44,15 @@ def build_tft_dataset(
     # do NOT compute training_cutoff inside blindly. This lets you reuse it for prediction
     # Predicts only the last horizon. This avoids data leakage and ensures realistic forecasting
     if is_training:
-        df = df[df.time_idx <= df.time_idx.max() - max_prediction_length]
+        df = df[df.time_idx <= df.time_idx.max() - MAX_PREDICTION_LENGTH]
 
     training = TimeSeriesDataSet(
         df,
         time_idx="time_idx",
         target=target,
         group_ids=["zone"],
-        max_encoder_length=max_encoder_length,
-        max_prediction_length=max_prediction_length,
+        max_encoder_length=MAX_ENCODER_LENGTH,
+        max_prediction_length=MAX_PREDICTION_LENGTH,
         static_categoricals=static_categoricals,
         static_reals=static_reals,
         time_varying_known_reals=time_varying_known_reals,
