@@ -149,6 +149,8 @@ def train_model(zone):
             bbox_inches="tight",
         )
 
+    logger.info("Training completed, saving plots and model...")
+
     # save model
     training.save(
         AUTOMATIC_DIR / f"{zone}_training_dataset"
