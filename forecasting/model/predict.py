@@ -70,6 +70,8 @@ def predict_next_24h(zone: str):
         AUTOMATIC_DIR / "tft_price_model.ckpt", weights_only=False
     )
 
+    logger.info("Model loaded from checkpoint")
+
     # Create dataloader
     prediction_dataloader = prediction_dataset.to_dataloader(
         train=False, batch_size=BATCH_SIZE, num_workers=4
@@ -115,6 +117,8 @@ def predict_next_24h(zone: str):
         prediction_df.index[-MAX_PREDICTION_LENGTH:], "price_eur_per_mwh"
     ] = pred_df["y_pred"].values
 
+    logger.info("Prediction dataframe tail:\n%s", pred_df.tail().to_string())
+
     plt.figure(figsize=(12, 4))
 
     for label, g in prediction_df.groupby("label"):
@@ -122,6 +126,8 @@ def predict_next_24h(zone: str):
 
     plt.legend()
     plt.grid(True)
-    plt.save_fig(OUTPUT_DIR / "Prediction.jpeg")
+    plt.savefig(OUTPUT_DIR / "Prediction.jpeg")
+
+    logger.info("Prediction plot saved to %s", OUTPUT_DIR / "Prediction.jpeg")
 
     return pred_df  # model.predict(...)
