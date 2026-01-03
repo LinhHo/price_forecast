@@ -1,7 +1,7 @@
 import click
 from forecasting.model.train import train_model
 from forecasting.model.predict import predict_next_24h
-from forecasting.logging_config import setup_logging
+from forecasting.config import setup_logging
 import logging
 
 setup_logging()
