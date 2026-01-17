@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
+from pytorch_forecasting.data.encoders import GroupNormalizer, NaNLabelEncoder
 
 from config import (
     AUTOMATIC_DIR,
@@ -54,9 +55,19 @@ def predict_next_24h(zone: str):
     )
 
     # This tells PyTorch it is safe to unpickle the TimeSeriesDataSet class
-    torch.serialization.add_safe_globals([TimeSeriesDataSet])
+    safe_list = [
+        TimeSeriesDataSet,
+        GroupNormalizer,
+        NaNLabelEncoder,
+        np.dtype,
+        np._core.multiarray.scalar,
+    ]
 
-    training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset")
+    # Use the context manager to load the dataset safely
+    with torch.serialization.safe_globals(safe_list):
+        training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset")
+
+    # training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset")
 
     # predict
     ### Load the trained model and predict ====================================
