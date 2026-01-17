@@ -127,6 +127,7 @@ def predict_next_24h(zone: str):
     plt.legend()
     plt.grid(True)
     plt.savefig(FIG_DIR / "Prediction.jpeg")
+    plt.close()
 
     logger.info("Prediction plot saved to %s", FIG_DIR / "Prediction.jpeg")
 

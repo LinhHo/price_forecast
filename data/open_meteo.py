@@ -28,9 +28,9 @@ def load_forecast(zone: str, date_to_predict=None) -> pd.DataFrame:
     # If not specify, predict for today
     if date_to_predict is None:
         date_to_predict = dt.today()  # Must include () to call the function
-    else:
-        end_day = date_to_predict.strftime("%Y-%m-%d")
-        start_day = (date_to_predict - timedelta(days=7)).strftime("%Y-%m-%d")
+
+    end_day = date_to_predict.strftime("%Y-%m-%d")
+    start_day = (date_to_predict - timedelta(days=7)).strftime("%Y-%m-%d")
 
     url = (
         "https://api.open-meteo.com/v1/forecast"
