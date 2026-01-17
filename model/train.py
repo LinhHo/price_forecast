@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import torch
 
@@ -127,6 +128,17 @@ def train_model(zone):
         mae / 120 * 100,
         mae / 50 * 100,
     )
+    stats = pd.DataFrame(
+        {
+            "MAE": [mae],
+            "RMSE": [rmse],
+            "SMAPE": [smape],
+            "y_min": [y_min],
+            "y_max": [y_max],
+        }
+    )
+    stats.to_csv(AUTOMATIC_DIR / f"{zone}_training_stats.csv")
+
     # visualize validation performance
     plt.figure(figsize=(10, 4))
     plt.plot(y_true[:200], label="Actual")
