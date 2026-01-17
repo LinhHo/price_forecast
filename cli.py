@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 def main(zone, train, predict):
     if train:
         train_model(zone)
-    if predict:
-        predict_next_24h(zone)
+        if predict:
+            predict_next_24h(zone)
 
 
 if __name__ == "__main__":

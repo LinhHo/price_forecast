@@ -5,7 +5,7 @@ from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
 
 from config import (
     AUTOMATIC_DIR,
-    OUTPUT_DIR,
+    FIG_DIR,
     BATCH_SIZE,
     MAX_PREDICTION_LENGTH,
     MAX_ENCODER_LENGTH,
@@ -126,8 +126,8 @@ def predict_next_24h(zone: str):
 
     plt.legend()
     plt.grid(True)
-    plt.savefig(OUTPUT_DIR / "Prediction.jpeg")
+    plt.savefig(FIG_DIR / "Prediction.jpeg")
 
-    logger.info("Prediction plot saved to %s", OUTPUT_DIR / "Prediction.jpeg")
+    logger.info("Prediction plot saved to %s", FIG_DIR / "Prediction.jpeg")
 
     return pred_df  # model.predict(...)

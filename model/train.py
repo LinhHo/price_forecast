@@ -11,7 +11,7 @@ from pytorch_forecasting.metrics import QuantileLoss
 from lightning.pytorch import Trainer
 from sklearn.metrics import mean_absolute_error
 
-from config import AUTOMATIC_DIR, OUTPUT_DIR, BATCH_SIZE, MAX_EPOCHS
+from config import AUTOMATIC_DIR, FIG_DIR, BATCH_SIZE, MAX_EPOCHS
 from data.era5 import load_era5
 from data.entsoe import load_prices
 from features.build_features import (
@@ -133,7 +133,7 @@ def train_model(zone):
     plt.plot(y_pred[:200], label="Predicted")
     plt.legend()
     plt.title(f"Validation performance MAE {mae}")
-    plt.savefig(OUTPUT_DIR / "Validation_training.jpeg")
+    plt.savefig(FIG_DIR / "Validation_training.jpeg")
 
     # Plot and save interpretation of the TFT model
     raw_predictions, x, *rest = tft.predict(val_dataloader, mode="raw", return_x=True)
@@ -144,7 +144,7 @@ def train_model(zone):
 
     for name, fig in figs.items():
         fig.savefig(
-            OUTPUT_DIR / f"tft_interpretation_{name}.png",
+            FIG_DIR / f"tft_interpretation_{name}.png",
             dpi=200,
             bbox_inches="tight",
         )

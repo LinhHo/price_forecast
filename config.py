@@ -5,20 +5,17 @@ import logging
 from dotenv import load_dotenv
 
 
-# This file is at: price_forecast/forecasting/config.py
+# This file is at: price_forecast/config.py
 # Level 0: config.py
-# Level 1: forecasting/
-# Level 2: price_forecast/ (This is your Root)
+# Level 1: price_forecast/ (This is your Root)
 
 # Get the directory where config.py is located
 BASE_DIR = Path(__file__).resolve().parent  # Result: .../forecasting/
-# project_root = directory containing "forecasting/"
-PROJECT_ROOT = Path(__file__).resolve().parents[1]  # Result: .../price_forecast/
 
 # Try loading from current directory first, then fallback to environment
 # Look for .env in the same directory as config.py
 # Since your .env is in the root, use PROJECT_ROOT
-load_dotenv(PROJECT_ROOT / ".env")
+load_dotenv(BASE_DIR / ".env")
 
 
 class Config:
@@ -35,12 +32,11 @@ MAX_EPOCHS = 10  # 30
 MAX_ENCODER_LENGTH = 168  # use past 7 days, electricity prices have weekly pattern
 MAX_PREDICTION_LENGTH = 24  # predict next 24 hours
 
-FORECASTING_DIR = PROJECT_ROOT / "forecasting"
-OUTPUT_DIR = FORECASTING_DIR / "output"
-AUTOMATIC_DIR = FORECASTING_DIR / "automatic"
+FIG_DIR = BASE_DIR / "figures"
+AUTOMATIC_DIR = BASE_DIR / "automatic"
 
 # create folders if needed
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+FIG_DIR.mkdir(parents=True, exist_ok=True)
 AUTOMATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 
