@@ -3,16 +3,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
 
-from forecasting.config import (
+from config import (
     AUTOMATIC_DIR,
     OUTPUT_DIR,
     BATCH_SIZE,
     MAX_PREDICTION_LENGTH,
     MAX_ENCODER_LENGTH,
 )
-from forecasting.data.open_meteo import load_forecast
-from forecasting.data.entsoe import load_prices
-from forecasting.features.build_features import (
+from data.open_meteo import load_forecast
+from data.entsoe import load_prices
+from features.build_features import (
     add_time_features,
     add_holiday_feature,
     add_zone,

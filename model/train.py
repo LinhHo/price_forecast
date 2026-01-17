@@ -11,15 +11,15 @@ from pytorch_forecasting.metrics import QuantileLoss
 from lightning.pytorch import Trainer
 from sklearn.metrics import mean_absolute_error
 
-from forecasting.config import AUTOMATIC_DIR, OUTPUT_DIR, BATCH_SIZE, MAX_EPOCHS
-from forecasting.data.era5 import load_era5
-from forecasting.data.entsoe import load_prices
-from forecasting.features.build_features import (
+from config import AUTOMATIC_DIR, OUTPUT_DIR, BATCH_SIZE, MAX_EPOCHS
+from data.era5 import load_era5
+from data.entsoe import load_prices
+from features.build_features import (
     add_time_features,
     add_holiday_feature,
     add_zone,
 )
-from forecasting.dataset.timeseries import build_tft_dataset
+from model.timeseries import build_tft_dataset
 import logging
 
 logger = logging.getLogger(__name__)

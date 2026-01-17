@@ -12,3 +12,9 @@ python -m forecasting.cli --zone NL
 !git branch -M main
 !git remote add origin https://github.com/yourname/your-repo.git
 !git push -u origin main
+
+Turn on GPU
+
+In the Colab menu:
+
+Runtime → Change runtime type → Hardware accelerator → GPU → Save

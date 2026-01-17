@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from pytorch_forecasting.data import GroupNormalizer
 from pytorch_forecasting import TimeSeriesDataSet
-from forecasting.config import MAX_PREDICTION_LENGTH, MAX_ENCODER_LENGTH
+from config import MAX_PREDICTION_LENGTH, MAX_ENCODER_LENGTH
 
 
 def build_tft_dataset(
