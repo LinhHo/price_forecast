@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
 from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
 
 from config import (
@@ -51,6 +52,9 @@ def predict_next_24h(zone: str):
         df.index.min(),
         df.index.max(),
     )
+
+    # This tells PyTorch it is safe to unpickle the TimeSeriesDataSet class
+    torch.serialization.add_safe_globals([TimeSeriesDataSet])
 
     training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset")
 
