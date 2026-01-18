@@ -62,6 +62,8 @@ def predict_next_24h(zone: str):
     df = pd.concat([df_train, df_forecast]).sort_index()
     # time_idx must be continuous
     df["time_idx"] = np.arange(len(df))
+    # fill with dummy 0, PyTorch Forecasting does not infer “missing = predict this”, it uses max_prediction_length
+    df["price_eur_per_mwh"] = df["price_eur_per_mwh"].fillna(0.0)
 
     with open(AUTOMATIC_DIR / f"{zone}_dataset_params.json") as f:
         params = json.load(f)
