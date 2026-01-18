@@ -63,7 +63,7 @@ def predict_next_24h(zone: str):
     # time_idx must be continuous
     df["time_idx"] = np.arange(len(df))
 
-    with open(AUTOMATIC_DIR / "dataset_params.json") as f:
+    with open(AUTOMATIC_DIR / f"{zone}_dataset_params.json") as f:
         params = json.load(f)
 
     # only train on df_train, df_forecast has NaN values for target (price)
@@ -82,7 +82,7 @@ def predict_next_24h(zone: str):
     # load the trained model
     # Less safe, Only do this for your own checkpoints, Never for downloaded models
     tft = TemporalFusionTransformer.load_from_checkpoint(
-        AUTOMATIC_DIR / "tft_price_model.ckpt", weights_only=False
+        AUTOMATIC_DIR / f"{zone}_tft_price_model.ckpt", weights_only=False
     )
 
     logger.info("Model loaded from checkpoint")
@@ -100,21 +100,28 @@ def predict_next_24h(zone: str):
         prediction_dataloader, mode="raw", return_x=True
     )
 
-    # median prediction
-    median_price = raw_predictions["prediction"][:, :, 1]
+    # median prediction, raw_predictions["prediction"] has shape (B batch size, H prediction horizon, number of quantiles (here 3))
+    # median_price = raw_predictions["prediction"][:, :, 1]
+    preds = raw_predictions["prediction"]  # (B, H, 3)
+    batch_size, horizon, number_of_quantiles = preds.shape
+
+    p10 = preds[:, :, 0].cpu().numpy()
+    p50 = preds[:, :, 1].cpu().numpy()
+    p90 = preds[:, :, 2].cpu().numpy()
 
     # Convert predictions to a DataFrame
     # Extract tensors → numpy
-    y_pred = median_price.cpu().numpy()  # (B, H)
+    # y_pred = median_price.cpu().numpy()  # (B, H)
     time_idx = x["decoder_time_idx"].cpu().numpy()  # (B, H)
-
-    batch_size, horizon = y_pred.shape
 
     pred_df = pd.DataFrame(
         {
-            "time_idx": time_idx.reshape(-1),
+            "time_idx": time_idx.flatten(),
+            "timestamp": x["decoder_time"].cpu().numpy().flatten(),
             "horizon": np.tile(np.arange(1, horizon + 1), batch_size),
-            "y_pred": y_pred.reshape(-1),
+            "p10": p10.flatten(),
+            "p50": p50.flatten(),
+            "p90": p90.flatten(),
         }
     )
 
@@ -141,9 +148,9 @@ def predict_next_24h(zone: str):
 
     plt.legend()
     plt.grid(True)
-    plt.savefig(FIG_DIR / "Prediction.jpeg")
+    plt.savefig(FIG_DIR / f"{zone}_Prediction.jpeg")
     plt.close()
 
-    logger.info("Prediction plot saved to %s", FIG_DIR / "Prediction.jpeg")
+    logger.info("Prediction plot saved to %s", FIG_DIR / f"{zone}_Prediction.jpeg")
 
     return pred_df  # model.predict(...)
