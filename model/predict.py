@@ -60,6 +60,8 @@ def predict_next_24h(zone: str):
     df_train = pd.read_parquet(AUTOMATIC_DIR / f"{zone}_training_data.parquet")
     df_forecast = prepare_forecast_df(zone, last_time_idx)
     df = pd.concat([df_train, df_forecast]).sort_index()
+    # time_idx must be continuous
+    df["time_idx"] = np.arange(len(df))
 
     with open(AUTOMATIC_DIR / "dataset_params.json") as f:
         params = json.load(f)
