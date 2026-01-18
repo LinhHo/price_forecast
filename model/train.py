@@ -238,7 +238,6 @@ def train_model(zone, is_training=True):
         time_varying_known_reals=time_varying_known_reals,
         time_varying_unknown_reals=time_varying_unknown_reals,
         time_varying_known_categoricals=time_varying_known_categoricals,
-        static_categoricals=["zone"],
     )
 
     with open(AUTOMATIC_DIR / f"{zone}_dataset_params.json", "w") as f:
