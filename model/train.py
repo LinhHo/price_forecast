@@ -84,7 +84,6 @@ def train_model(zone, is_training=True):
         transformation=None,  # "softplus" # softplus assumes positive values, which is not always true for electricity prices # very important for prices
     )
 
-    # do NOT compute training_cutoff inside blindly. This lets you reuse it for prediction
     # Predicts only the last horizon. This avoids data leakage and ensures realistic forecasting
     if is_training:
         df = df[df.time_idx <= df.time_idx.max() - MAX_PREDICTION_LENGTH]
@@ -125,7 +124,9 @@ def train_model(zone, is_training=True):
         hidden_size=32,
         attention_head_size=4,
         dropout=0.1,
-        loss=QuantileLoss(),
+        loss=QuantileLoss(
+            [0.1, 0.5, 0.9]
+        ),  # stochastic non-demterministic prediction, to get the mean (P50) and the range (P10-90) of the probability
     )
 
     ### train the model (core) ================================
@@ -207,7 +208,7 @@ def train_model(zone, is_training=True):
     plt.plot(y_pred[:200], label="Predicted")
     plt.legend()
     plt.title(f"Validation performance MAE {mae}")
-    plt.savefig(FIG_DIR / "Validation_training.jpeg")
+    plt.savefig(FIG_DIR / f"{zone}_Validation_training.jpeg")
 
     # Plot and save interpretation of the TFT model
     raw_predictions, x, *rest = tft.predict(val_dataloader, mode="raw", return_x=True)
@@ -218,7 +219,7 @@ def train_model(zone, is_training=True):
 
     for name, fig in figs.items():
         fig.savefig(
-            FIG_DIR / f"tft_interpretation_{name}.png",
+            FIG_DIR / f"{zone}_tft_interpretation_{name}.png",
             dpi=200,
             bbox_inches="tight",
         )
@@ -226,9 +227,6 @@ def train_model(zone, is_training=True):
     logger.info("Training completed, saving plots and model...")
 
     # save model
-    # training.save(
-    #     AUTOMATIC_DIR / f"{zone}_training_dataset"
-    # )  # built-in save function for TimeSeriesDataSet PyTorch dataset
     df.to_parquet(AUTOMATIC_DIR / f"{zone}_training_data.parquet")
 
     dataset_params = dict(
@@ -243,9 +241,11 @@ def train_model(zone, is_training=True):
         static_categoricals=["zone"],
     )
 
-    with open(AUTOMATIC_DIR / "dataset_params.json", "w") as f:
+    with open(AUTOMATIC_DIR / f"{zone}_dataset_params.json", "w") as f:
         json.dump(dataset_params, f)
 
-    trainer.save_checkpoint(AUTOMATIC_DIR / "tft_price_model.ckpt")  # save_model(tft)
+    trainer.save_checkpoint(
+        AUTOMATIC_DIR / f"{zone}_tft_price_model.ckpt"
+    )  # save_model(tft)
 
     return trainer
