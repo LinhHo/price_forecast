@@ -66,7 +66,8 @@ def predict_next_24h(zone: str):
     with open(AUTOMATIC_DIR / "dataset_params.json") as f:
         params = json.load(f)
 
-    training = TimeSeriesDataSet(df, **params)
+    # only train on df_train, df_forecast has NaN values for target (price)
+    training = TimeSeriesDataSet(df_train, **params)
 
     # predict
     ### Load the trained model and predict ====================================
