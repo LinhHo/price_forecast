@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import json
+
 import torch
 from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
 from pytorch_forecasting.data.encoders import GroupNormalizer, NaNLabelEncoder
@@ -54,20 +56,15 @@ def predict_next_24h(zone: str):
         df.index.max(),
     )
 
-    # This tells PyTorch it is safe to unpickle the TimeSeriesDataSet class
-    safe_list = [
-        TimeSeriesDataSet,
-        GroupNormalizer,
-        NaNLabelEncoder,
-        np.dtype,
-        np._core.multiarray.scalar,
-    ]
+    # Append forecast df to training history (required for TFT)
+    df_train = pd.read_parquet(AUTOMATIC_DIR / f"{zone}_training_data.parquet")
+    df_forecast = prepare_forecast_df(zone, last_time_idx)
+    df = pd.concat([df_train, df_forecast]).sort_index()
 
-    # Use the context manager to load the dataset safely
-    with torch.serialization.safe_globals(safe_list):
-        training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset")
+    with open(AUTOMATIC_DIR / "dataset_params.json") as f:
+        params = json.load(f)
 
-    # training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset")
+    training = TimeSeriesDataSet(df, **params)
 
     # predict
     ### Load the trained model and predict ====================================

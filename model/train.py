@@ -2,17 +2,26 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import torch
+import json
 
 # import torch.nn as nn
 import torch.nn.functional as F
 
 # import torch.optim as optim
 from pytorch_forecasting import TimeSeriesDataSet, TemporalFusionTransformer
+from pytorch_forecasting.data import GroupNormalizer
 from pytorch_forecasting.metrics import QuantileLoss
 from lightning.pytorch import Trainer
 from sklearn.metrics import mean_absolute_error
 
-from config import AUTOMATIC_DIR, FIG_DIR, BATCH_SIZE, MAX_EPOCHS
+from config import (
+    AUTOMATIC_DIR,
+    FIG_DIR,
+    BATCH_SIZE,
+    MAX_EPOCHS,
+    MAX_ENCODER_LENGTH,
+    MAX_PREDICTION_LENGTH,
+)
 from data.era5 import load_era5
 from data.entsoe import load_prices
 from features.build_features import (
@@ -20,7 +29,8 @@ from features.build_features import (
     add_holiday_feature,
     add_zone,
 )
-from model.timeseries import build_tft_dataset
+
+# from model.timeseries import build_tft_dataset
 import logging
 
 logger = logging.getLogger(__name__)
@@ -41,9 +51,61 @@ def prepare_training_df(zone):
     return df
 
 
-def train_model(zone):
+def train_model(zone, is_training=True):
     df = prepare_training_df(zone)
-    training = build_tft_dataset(df, is_training=True)
+
+    # training = build_tft_dataset(df, is_training=True)
+
+    # Features for TFT setup (unchanged later)
+    target = "price_eur_per_mwh"
+    time_varying_known_reals = [
+        "time_idx",
+        "hour_of_day",
+        "day_of_year",
+        "day_of_week",
+        "day_of_month",
+        "month",
+        "t2m",
+        "ssrd",
+        "u100",
+        "v100",
+    ]
+
+    time_varying_unknown_reals = ["price_eur_per_mwh"]
+
+    # Static categorical features (don't change over time)
+    static_categoricals = ["zone"]
+    static_reals = []
+    time_varying_known_categoricals = ["is_holiday"]
+
+    # normalizer using group zone as different zone can have big or small generation and price
+    target_normalizer = GroupNormalizer(
+        groups=["zone"],
+        transformation=None,  # "softplus" # softplus assumes positive values, which is not always true for electricity prices # very important for prices
+    )
+
+    # do NOT compute training_cutoff inside blindly. This lets you reuse it for prediction
+    # Predicts only the last horizon. This avoids data leakage and ensures realistic forecasting
+    if is_training:
+        df = df[df.time_idx <= df.time_idx.max() - MAX_PREDICTION_LENGTH]
+
+    training = TimeSeriesDataSet(
+        df,
+        time_idx="time_idx",
+        target=target,
+        group_ids=["zone"],
+        max_encoder_length=MAX_ENCODER_LENGTH,
+        max_prediction_length=MAX_PREDICTION_LENGTH,
+        static_categoricals=static_categoricals,
+        static_reals=static_reals,
+        time_varying_known_reals=time_varying_known_reals,
+        time_varying_unknown_reals=time_varying_unknown_reals,
+        time_varying_known_categoricals=time_varying_known_categoricals,  # added
+        target_normalizer=target_normalizer,  # None,  # we'll use built-in scaling later
+        add_relative_time_idx=True,
+        add_target_scales=False,  # Do NOT use add_target_scales=True with target_normalizer=None
+        add_encoder_length=True,
+    )
 
     logger.info(
         "Starting training | zone=%s | start=%s | end=%s",
@@ -164,9 +226,26 @@ def train_model(zone):
     logger.info("Training completed, saving plots and model...")
 
     # save model
-    training.save(
-        AUTOMATIC_DIR / f"{zone}_training_dataset"
-    )  # built-in save function for TimeSeriesDataSet PyTorch dataset
+    # training.save(
+    #     AUTOMATIC_DIR / f"{zone}_training_dataset"
+    # )  # built-in save function for TimeSeriesDataSet PyTorch dataset
+    df.to_parquet(AUTOMATIC_DIR / f"{zone}_training_data.parquet")
+
+    dataset_params = dict(
+        time_idx="time_idx",
+        target="price_eur_per_mwh",
+        group_ids=["zone"],
+        max_encoder_length=MAX_ENCODER_LENGTH,
+        max_prediction_length=MAX_PREDICTION_LENGTH,
+        time_varying_known_reals=time_varying_known_reals,
+        time_varying_unknown_reals=time_varying_unknown_reals,
+        time_varying_known_categoricals=time_varying_known_categoricals,
+        static_categoricals=["zone"],
+    )
+
+    with open(AUTOMATIC_DIR / "dataset_params.json", "w") as f:
+        json.dump(dataset_params, f)
+
     trainer.save_checkpoint(AUTOMATIC_DIR / "tft_price_model.ckpt")  # save_model(tft)
 
     return trainer
