@@ -63,10 +63,7 @@ def predict_next_24h(zone: str):
     )
 
     # Append forecast df to training history (required for TFT)
-    training = TimeSeriesDataSet.load(
-        AUTOMATIC_DIR / f"{zone}_training_dataset.pt",
-        weights_only=False,
-    )
+    training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset.pt")
 
     # df_train = pd.read_parquet(AUTOMATIC_DIR / f"{zone}_training_data.parquet")
     # df_forecast = prepare_forecast_df(zone, last_time_idx)
