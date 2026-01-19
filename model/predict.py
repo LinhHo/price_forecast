@@ -48,6 +48,21 @@ from pytorch_forecasting.data.timeseries import TimeSeriesDataSet
 add_safe_globals([TimeSeriesDataSet, pd.DataFrame, GroupNormalizer])
 # torch.serialization.add_safe_globals([pytorch_forecasting.data.encoders.GroupNormalizer])
 
+import time
+
+
+def load_pytorch_dataset(path, retries=3, delay=3):
+    for attempt in range(retries):
+        try:
+            return TimeSeriesDataSet.load(path)
+        except Exception as e:
+            if attempt == retries - 1:
+                raise
+            logger.error(
+                f"Load pytorch training dataset failed (attempt {attempt+1}), retrying..."
+            )
+            time.sleep(delay)
+
 
 def predict_next_24h(zone: str):
     # load last_time_idx from training
@@ -64,7 +79,8 @@ def predict_next_24h(zone: str):
     )
 
     # Append forecast df to training history (required for TFT)
-    training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset.pt")
+    training = load_pytorch_dataset(AUTOMATIC_DIR / f"{zone}_training_dataset.pt")
+    # training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset.pt")
 
     # df_train = pd.read_parquet(AUTOMATIC_DIR / f"{zone}_training_data.parquet")
     # df_forecast = prepare_forecast_df(zone, last_time_idx)
