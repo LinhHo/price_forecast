@@ -160,6 +160,7 @@ def predict_next_24h(zone: str):
         plt.plot(g["time"], g["price_eur_per_mwh"], label=label)
 
     plt.grid("major")
+    plt.set_ylabel("Price [EUR/MWh]")
     plt.legend()
 
     plt.savefig(FIG_DIR / f"{zone}_prediction.jpeg")
