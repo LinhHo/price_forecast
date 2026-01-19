@@ -79,8 +79,15 @@ def predict_next_24h(zone: str):
     )
 
     # Append forecast df to training history (required for TFT)
-    training = load_pytorch_dataset(AUTOMATIC_DIR / f"{zone}_training_dataset.pt")
-    # training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset.pt")
+    try:
+        training = TimeSeriesDataSet.load(AUTOMATIC_DIR / f"{zone}_training_dataset.pt")
+    except Exception as e:
+        logger.error(
+            f"Load pytorch training dataset failed, retrying with torch.load..."
+        )
+        training = torch.load(
+            AUTOMATIC_DIR / f"{zone}_training_dataset.pt", weights_only=False
+        )
 
     # df_train = pd.read_parquet(AUTOMATIC_DIR / f"{zone}_training_data.parquet")
     # df_forecast = prepare_forecast_df(zone, last_time_idx)
