@@ -45,7 +45,10 @@ def prepare_forecast_df(zone, last_time_idx):
 from torch.serialization import add_safe_globals
 from pytorch_forecasting.data.timeseries import TimeSeriesDataSet
 
-add_safe_globals([TimeSeriesDataSet, pd.DataFrame])
+add_safe_globals(
+    [TimeSeriesDataSet, pd.DataFrame, pytorch_forecasting.data.encoders.GroupNormalizer]
+)
+# torch.serialization.add_safe_globals([pytorch_forecasting.data.encoders.GroupNormalizer])
 
 
 def predict_next_24h(zone: str):
