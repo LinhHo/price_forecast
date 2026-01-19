@@ -128,7 +128,7 @@ def train_model(zone, is_training=True):
             [0.1, 0.5, 0.9]
         ),  # stochastic non-demterministic prediction, to get the mean (P50) and the range (P10-90) of the probability
     )
-    print(f"Number of parameters in network: {tft.size() / 1e3:.1f}k")
+    logger.info("Number of parameters in network: %.1f k", tft.size() / 1e3)
 
     ### train the model (core) ================================
 

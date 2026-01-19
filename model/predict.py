@@ -52,9 +52,6 @@ def predict_next_24h(zone: str):
     df = prepare_forecast_df(zone, last_time_idx)
     assert df["time_idx"].is_monotonic_increasing
     time_stamps = df.index
-    print(
-        f"==== Time stamps of df forecast with length {len(time_stamps)}: \n {time_stamps}"
-    )
 
     # fill with dummy 0, PyTorch Forecasting does not infer “missing = predict this”, it uses max_prediction_length
     df["price_eur_per_mwh"] = df["price_eur_per_mwh"].fillna(0.0)
