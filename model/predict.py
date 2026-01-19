@@ -5,7 +5,10 @@ import json
 
 import torch
 from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
-from pytorch_forecasting.data.encoders import GroupNormalizer, NaNLabelEncoder
+from pytorch_forecasting.data.encoders import GroupNormalizer
+from torch.serialization import add_safe_globals
+
+add_safe_globals([TimeSeriesDataSet, pd.DataFrame, GroupNormalizer])
 
 from config import (
     AUTOMATIC_DIR,
@@ -42,28 +45,6 @@ def prepare_forecast_df(zone, last_time_idx):
     return df
 
 
-from torch.serialization import add_safe_globals
-from pytorch_forecasting.data.timeseries import TimeSeriesDataSet
-
-add_safe_globals([TimeSeriesDataSet, pd.DataFrame, GroupNormalizer])
-# torch.serialization.add_safe_globals([pytorch_forecasting.data.encoders.GroupNormalizer])
-
-import time
-
-
-def load_pytorch_dataset(path, retries=3, delay=3):
-    for attempt in range(retries):
-        try:
-            return TimeSeriesDataSet.load(path)
-        except Exception as e:
-            if attempt == retries - 1:
-                raise
-            logger.error(
-                f"Load pytorch training dataset failed (attempt {attempt+1}), retrying..."
-            )
-            time.sleep(delay)
-
-
 def predict_next_24h(zone: str):
     # load last_time_idx from training
     last_time_idx = np.load(AUTOMATIC_DIR / f"{zone}_last_time_idx.npy")
@@ -96,18 +77,6 @@ def predict_next_24h(zone: str):
             AUTOMATIC_DIR / f"{zone}_training_dataset.pt", weights_only=False
         )
 
-    # df_train = pd.read_parquet(AUTOMATIC_DIR / f"{zone}_training_data.parquet")
-    # df_forecast = prepare_forecast_df(zone, last_time_idx)
-    # df = pd.concat([df_train, df_forecast]).sort_index()
-    # # time_idx must be continuous
-    # df["time_idx"] = np.arange(len(df))
-
-    # with open(AUTOMATIC_DIR / f"{zone}_dataset_params.json") as f:
-    #     params = json.load(f)
-
-    # # only train on df_train, df_forecast has NaN values for target (price)
-    # training = TimeSeriesDataSet(df_train, **params)
-
     # predict
     ### Load the trained model and predict ====================================
     # Build prediction dataset, applies SAME scaling, SAME categorical encodings, SAME time handling
@@ -132,15 +101,12 @@ def predict_next_24h(zone: str):
     )
 
     # Generate predictions. Point forecasts (median, default)
-    # predictions = tft.predict(prediction_dataloader)
-
     # Quantile forecasts (recommended for prices)
     raw_predictions, x, *rest = tft.predict(
         prediction_dataloader, mode="raw", return_x=True
     )
 
     # median prediction, raw_predictions["prediction"] has shape (B batch size, H prediction horizon, number of quantiles (here 3))
-    # median_price = raw_predictions["prediction"][:, :, 1]
     preds = raw_predictions["prediction"]  # (B, H, 3)
     batch_size, horizon, number_of_quantiles = preds.shape
 
@@ -150,9 +116,7 @@ def predict_next_24h(zone: str):
 
     # Convert predictions to a DataFrame
     # Extract tensors → numpy
-    # y_pred = median_price.cpu().numpy()  # (B, H)
     time_idx = x["decoder_time_idx"].cpu().numpy().flatten()  # (B, H)
-    # time_idx_to_timestamp = df.reset_index().set_index("time_idx")["index"]
 
     pred_df = pd.DataFrame(
         {
@@ -190,17 +154,20 @@ def predict_next_24h(zone: str):
 
     logger.info("Prediction dataframe tail:\n%s", pred_df.tail().to_string())
     prediction_df.to_csv(AUTOMATIC_DIR / f"{zone}_prediction.csv")
+    prediction_df["time"] = pd.to_datetime(prediction_df["time"])
 
     plt.figure(figsize=(12, 4))
 
     for label, g in prediction_df.groupby("label"):
-        plt.plot(g.index, g["price_eur_per_mwh"], label=label)
+        plt.fill_between(g["time"], g["p90"], g["p10"], alpha=0.3, facecolor="orange")
+        plt.plot(g["time"], g["price_eur_per_mwh"], label=label)
 
+    plt.grid("major")
     plt.legend()
-    plt.grid(True)
-    plt.savefig(FIG_DIR / f"{zone}_Prediction.jpeg")
+
+    plt.savefig(FIG_DIR / f"{zone}_prediction.jpeg")
     plt.close()
 
-    logger.info("Prediction plot saved to %s", FIG_DIR / f"{zone}_Prediction.jpeg")
+    logger.info("Prediction plot saved to %s", FIG_DIR / f"{zone}_prediction.jpeg")
 
-    return pred_df  # model.predict(...)
+    return pred_df
