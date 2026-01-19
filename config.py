@@ -58,12 +58,8 @@ import logging
 from pathlib import Path
 
 
-def setup_logging(log_level=logging.INFO):
+def setup_logging(log_level=logging.INFO, log_dir=LOG_DIR):
     # Project root (forecasting/ is inside repo)
-    root_dir = Path(__file__).resolve().parents[1]
-    log_dir = root_dir / "logs"
-    log_dir.mkdir(exist_ok=True)
-
     app_log = log_dir / "app.log"
     error_log = log_dir / "error.log"
 
