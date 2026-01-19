@@ -157,7 +157,6 @@ def predict_next_24h(zone: str):
     pred_df = pd.DataFrame(
         {
             "time_idx": time_idx,
-            "timestamp": time_stamps[time_idx],
             "horizon": np.tile(np.arange(1, horizon + 1), batch_size),
             "p10": p10.flatten(),
             "p50": p50.flatten(),
@@ -171,6 +170,7 @@ def predict_next_24h(zone: str):
 
     # Plot timeseries of past prices and forecast with different colours
     prediction_df = df.copy()["price_eur_per_mwh"].to_frame()
+    prediction_df["time"] = time_stamps
     prediction_df["label"] = "ENTSOE price"
     prediction_df.loc[prediction_df.index[-MAX_PREDICTION_LENGTH:], "label"] = (
         "TFT forecast"
@@ -178,8 +178,18 @@ def predict_next_24h(zone: str):
     prediction_df.loc[
         prediction_df.index[-MAX_PREDICTION_LENGTH:], "price_eur_per_mwh"
     ] = pred_df["p50"].values
+    # add range p10-90
+    prediction_df["p10"] = prediction_df["price_eur_per_mwh"]
+    prediction_df["p90"] = prediction_df["price_eur_per_mwh"]
+    prediction_df.loc[prediction_df.index[-MAX_PREDICTION_LENGTH:], "p10"] = pred_df[
+        "p10"
+    ].values
+    prediction_df.loc[prediction_df.index[-MAX_PREDICTION_LENGTH:], "p90"] = pred_df[
+        "p90"
+    ].values
 
     logger.info("Prediction dataframe tail:\n%s", pred_df.tail().to_string())
+    prediction_df.to_csv(AUTOMATIC_DIR / f"{zone}_prediction.csv")
 
     plt.figure(figsize=(12, 4))
 
