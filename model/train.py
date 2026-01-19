@@ -235,9 +235,15 @@ def train_model(zone, is_training=True):
         group_ids=["zone"],
         max_encoder_length=MAX_ENCODER_LENGTH,
         max_prediction_length=MAX_PREDICTION_LENGTH,
+        static_categoricals=static_categoricals,
+        static_reals=static_reals,
         time_varying_known_reals=time_varying_known_reals,
         time_varying_unknown_reals=time_varying_unknown_reals,
         time_varying_known_categoricals=time_varying_known_categoricals,
+        target_normalizer=target_normalizer,  # None,  # we'll use built-in scaling later
+        add_relative_time_idx=True,
+        add_target_scales=False,  # Do NOT use add_target_scales=True with target_normalizer=None
+        add_encoder_length=True,
     )
 
     with open(AUTOMATIC_DIR / f"{zone}_dataset_params.json", "w") as f:

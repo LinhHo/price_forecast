@@ -139,7 +139,7 @@ def predict_next_24h(zone: str):
     )
     prediction_df.loc[
         prediction_df.index[-MAX_PREDICTION_LENGTH:], "price_eur_per_mwh"
-    ] = pred_df["y_pred"].values
+    ] = pred_df["p50"].values
 
     logger.info("Prediction dataframe tail:\n%s", pred_df.tail().to_string())
 
