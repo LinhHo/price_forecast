@@ -30,7 +30,7 @@ from features.build_features import (
     add_zone,
 )
 
-# from model.timeseries import build_tft_dataset
+from model.timeseries import build_tft_dataset
 import logging
 
 logger = logging.getLogger(__name__)
@@ -54,57 +54,57 @@ def prepare_training_df(zone):
 def train_model(zone, is_training=True):
     df = prepare_training_df(zone)
 
-    # training = build_tft_dataset(df, is_training=True)
+    training = build_tft_dataset(df, is_training=True)
 
-    # Features for TFT setup (unchanged later)
-    target = "price_eur_per_mwh"
-    time_varying_known_reals = [
-        "time_idx",
-        "hour_of_day",
-        "day_of_year",
-        "day_of_week",
-        "day_of_month",
-        "month",
-        "t2m",
-        "ssrd",
-        "u100",
-        "v100",
-    ]
+    # # Features for TFT setup (unchanged later)
+    # target = "price_eur_per_mwh"
+    # time_varying_known_reals = [
+    #     "time_idx",
+    #     "hour_of_day",
+    #     "day_of_year",
+    #     "day_of_week",
+    #     "day_of_month",
+    #     "month",
+    #     "t2m",
+    #     "ssrd",
+    #     "u100",
+    #     "v100",
+    # ]
 
-    time_varying_unknown_reals = ["price_eur_per_mwh"]
+    # time_varying_unknown_reals = ["price_eur_per_mwh"]
 
-    # Static categorical features (don't change over time)
-    static_categoricals = ["zone"]
-    static_reals = []
-    time_varying_known_categoricals = ["is_holiday"]
+    # # Static categorical features (don't change over time)
+    # static_categoricals = ["zone"]
+    # static_reals = []
+    # time_varying_known_categoricals = ["is_holiday"]
 
-    # normalizer using group zone as different zone can have big or small generation and price
-    target_normalizer = GroupNormalizer(
-        groups=["zone"],
-        transformation=None,  # "softplus" # softplus assumes positive values, which is not always true for electricity prices # very important for prices
-    )
+    # # normalizer using group zone as different zone can have big or small generation and price
+    # target_normalizer = GroupNormalizer(
+    #     groups=["zone"],
+    #     transformation=None,  # "softplus" # softplus assumes positive values, which is not always true for electricity prices # very important for prices
+    # )
 
-    # Predicts only the last horizon. This avoids data leakage and ensures realistic forecasting
-    if is_training:
-        df = df[df.time_idx <= df.time_idx.max() - MAX_PREDICTION_LENGTH]
+    # # Predicts only the last horizon. This avoids data leakage and ensures realistic forecasting
+    # if is_training:
+    #     df = df[df.time_idx <= df.time_idx.max() - MAX_PREDICTION_LENGTH]
 
-    training = TimeSeriesDataSet(
-        df,
-        time_idx="time_idx",
-        target=target,
-        group_ids=["zone"],
-        max_encoder_length=MAX_ENCODER_LENGTH,
-        max_prediction_length=MAX_PREDICTION_LENGTH,
-        static_categoricals=static_categoricals,
-        static_reals=static_reals,
-        time_varying_known_reals=time_varying_known_reals,
-        time_varying_unknown_reals=time_varying_unknown_reals,
-        time_varying_known_categoricals=time_varying_known_categoricals,  # added
-        target_normalizer=target_normalizer,  # None,  # we'll use built-in scaling later
-        add_relative_time_idx=True,
-        add_target_scales=False,  # Do NOT use add_target_scales=True with target_normalizer=None
-        add_encoder_length=True,
-    )
+    # training = TimeSeriesDataSet(
+    #     df,
+    #     time_idx="time_idx",
+    #     target=target,
+    #     group_ids=["zone"],
+    #     max_encoder_length=MAX_ENCODER_LENGTH,
+    #     max_prediction_length=MAX_PREDICTION_LENGTH,
+    #     static_categoricals=static_categoricals,
+    #     static_reals=static_reals,
+    #     time_varying_known_reals=time_varying_known_reals,
+    #     time_varying_unknown_reals=time_varying_unknown_reals,
+    #     time_varying_known_categoricals=time_varying_known_categoricals,  # added
+    #     target_normalizer=target_normalizer,  # None,  # we'll use built-in scaling later
+    #     add_relative_time_idx=True,
+    #     add_target_scales=False,  # Do NOT use add_target_scales=True with target_normalizer=None
+    #     add_encoder_length=True,
+    # )
 
     logger.info(
         "Starting training | zone=%s | start=%s | end=%s",
@@ -120,7 +120,7 @@ def train_model(zone, is_training=True):
     ### model setup ==========================================
     tft = TemporalFusionTransformer.from_dataset(
         training,
-        learning_rate=3e-3,  # 1e-3, too conservative
+        learning_rate=3e-3,  # 1e-3, too conservative, reduce learning rate if no improvement in validation loss after x epochs
         hidden_size=32,
         attention_head_size=4,
         dropout=0.1,
@@ -128,6 +128,7 @@ def train_model(zone, is_training=True):
             [0.1, 0.5, 0.9]
         ),  # stochastic non-demterministic prediction, to get the mean (P50) and the range (P10-90) of the probability
     )
+    print(f"Number of parameters in network: {tft.size() / 1e3:.1f}k")
 
     ### train the model (core) ================================
 
@@ -226,28 +227,30 @@ def train_model(zone, is_training=True):
 
     logger.info("Training completed, saving plots and model...")
 
-    # save model
-    df.to_parquet(AUTOMATIC_DIR / f"{zone}_training_data.parquet")
+    # # save model
+    # df.to_parquet(AUTOMATIC_DIR / f"{zone}_training_data.parquet")
 
-    dataset_params = dict(
-        time_idx="time_idx",
-        target="price_eur_per_mwh",
-        group_ids=["zone"],
-        max_encoder_length=MAX_ENCODER_LENGTH,
-        max_prediction_length=MAX_PREDICTION_LENGTH,
-        static_categoricals=static_categoricals,
-        static_reals=static_reals,
-        time_varying_known_reals=time_varying_known_reals,
-        time_varying_unknown_reals=time_varying_unknown_reals,
-        time_varying_known_categoricals=time_varying_known_categoricals,
-        target_normalizer=target_normalizer,  # None,  # we'll use built-in scaling later
-        add_relative_time_idx=True,
-        add_target_scales=False,  # Do NOT use add_target_scales=True with target_normalizer=None
-        add_encoder_length=True,
-    )
+    # dataset_params = dict(
+    #     time_idx="time_idx",
+    #     target="price_eur_per_mwh",
+    #     group_ids=["zone"],
+    #     max_encoder_length=MAX_ENCODER_LENGTH,
+    #     max_prediction_length=MAX_PREDICTION_LENGTH,
+    #     static_categoricals=static_categoricals,
+    #     static_reals=static_reals,
+    #     time_varying_known_reals=time_varying_known_reals,
+    #     time_varying_unknown_reals=time_varying_unknown_reals,
+    #     time_varying_known_categoricals=time_varying_known_categoricals,
+    #     target_normalizer=target_normalizer,  # None,  # we'll use built-in scaling later
+    #     add_relative_time_idx=True,
+    #     add_target_scales=False,  # Do NOT use add_target_scales=True with target_normalizer=None
+    #     add_encoder_length=True,
+    # )
 
-    with open(AUTOMATIC_DIR / f"{zone}_dataset_params.json", "w") as f:
-        json.dump(dataset_params, f)
+    # with open(AUTOMATIC_DIR / f"{zone}_dataset_params.json", "w") as f:
+    #     json.dump(dataset_params, f)
+
+    training.save(AUTOMATIC_DIR / f"{zone}_training_dataset.pt")
 
     trainer.save_checkpoint(
         AUTOMATIC_DIR / f"{zone}_tft_price_model.ckpt"

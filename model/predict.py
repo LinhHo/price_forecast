@@ -42,6 +42,12 @@ def prepare_forecast_df(zone, last_time_idx):
     return df
 
 
+from torch.serialization import add_safe_globals
+from pytorch_forecasting.data.timeseries import TimeSeriesDataSet
+
+add_safe_globals([TimeSeriesDataSet, pd.DataFrame])
+
+
 def predict_next_24h(zone: str):
     # load last_time_idx from training
     last_time_idx = np.load(AUTOMATIC_DIR / f"{zone}_last_time_idx.npy")
@@ -57,19 +63,24 @@ def predict_next_24h(zone: str):
     )
 
     # Append forecast df to training history (required for TFT)
-    df_train = pd.read_parquet(AUTOMATIC_DIR / f"{zone}_training_data.parquet")
-    df_forecast = prepare_forecast_df(zone, last_time_idx)
-    df = pd.concat([df_train, df_forecast]).sort_index()
-    # time_idx must be continuous
-    df["time_idx"] = np.arange(len(df))
-    # fill with dummy 0, PyTorch Forecasting does not infer “missing = predict this”, it uses max_prediction_length
-    df["price_eur_per_mwh"] = df["price_eur_per_mwh"].fillna(0.0)
+    training = TimeSeriesDataSet.load(
+        AUTOMATIC_DIR / f"{zone}_training_dataset.pt",
+        weights_only=False,
+    )
 
-    with open(AUTOMATIC_DIR / f"{zone}_dataset_params.json") as f:
-        params = json.load(f)
+    # df_train = pd.read_parquet(AUTOMATIC_DIR / f"{zone}_training_data.parquet")
+    # df_forecast = prepare_forecast_df(zone, last_time_idx)
+    # df = pd.concat([df_train, df_forecast]).sort_index()
+    # # time_idx must be continuous
+    # df["time_idx"] = np.arange(len(df))
+    # # fill with dummy 0, PyTorch Forecasting does not infer “missing = predict this”, it uses max_prediction_length
+    # df["price_eur_per_mwh"] = df["price_eur_per_mwh"].fillna(0.0)
 
-    # only train on df_train, df_forecast has NaN values for target (price)
-    training = TimeSeriesDataSet(df_train, **params)
+    # with open(AUTOMATIC_DIR / f"{zone}_dataset_params.json") as f:
+    #     params = json.load(f)
+
+    # # only train on df_train, df_forecast has NaN values for target (price)
+    # training = TimeSeriesDataSet(df_train, **params)
 
     # predict
     ### Load the trained model and predict ====================================
