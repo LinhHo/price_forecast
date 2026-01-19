@@ -70,6 +70,11 @@ def predict_next_24h(zone: str):
 
     df = prepare_forecast_df(zone, last_time_idx)
     assert df["time_idx"].is_monotonic_increasing
+    time_stamps = df.index
+    print(
+        f"==== Time stamps of df forecast with length {len(time_stamps)}: \n {time_stamps}"
+    )
+
     # fill with dummy 0, PyTorch Forecasting does not infer “missing = predict this”, it uses max_prediction_length
     df["price_eur_per_mwh"] = df["price_eur_per_mwh"].fillna(0.0)
 
@@ -146,12 +151,13 @@ def predict_next_24h(zone: str):
     # Convert predictions to a DataFrame
     # Extract tensors → numpy
     # y_pred = median_price.cpu().numpy()  # (B, H)
-    time_idx = x["decoder_time_idx"].cpu().numpy()  # (B, H)
+    time_idx = x["decoder_time_idx"].cpu().numpy().flatten()  # (B, H)
+    # time_idx_to_timestamp = df.reset_index().set_index("time_idx")["index"]
 
     pred_df = pd.DataFrame(
         {
-            "time_idx": time_idx.flatten(),
-            "timestamp": x["decoder_time"].cpu().numpy().flatten(),
+            "time_idx": time_idx,
+            "timestamp": time_stamps[time_idx],
             "horizon": np.tile(np.arange(1, horizon + 1), batch_size),
             "p10": p10.flatten(),
             "p50": p50.flatten(),
