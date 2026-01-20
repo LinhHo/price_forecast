@@ -126,7 +126,7 @@ class TFTPriceModel:
         self._ensure_dirs()
 
         # Save model & Dataset
-        io.save_checkpoint(self.model, self.run_dir / "model" / "tft.ckpt")
+        io.save_checkpoint(trainer, self.run_dir / "model" / "tft.ckpt")
         io.save_TimeSeriesDataSet(
             training, self.run_dir / "data" / "training_dataset.pt"
         )
