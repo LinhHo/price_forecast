@@ -11,7 +11,7 @@ import numpy as np
 import requests
 from datetime import datetime as dt, timedelta
 
-from data.era5 import get_bounds_zone
+from forecasting.data.era5 import get_bounds_zone
 
 
 def load_forecast(zone: str, start, end) -> pd.DataFrame:

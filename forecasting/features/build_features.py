@@ -4,7 +4,7 @@ Add time features and static features to the dataframe
 
 # build_features.py
 import pandas as pd
-from data.holidays import HOLIDAYS
+from forecasting.data.holidays import HOLIDAYS
 
 
 

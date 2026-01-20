@@ -3,6 +3,7 @@ HTTP layer
 """
 
 # api/routes.py
+import pandas as pd
 from fastapi import APIRouter
 from model.registry import get_model
 from data.entsoe import load_prices
@@ -11,9 +12,10 @@ from data.open_meteo import load_forecast
 
 router = APIRouter()
 
+
 @router.post("/train/{zone}")
 def train(zone: str):
-    model = TFTPriceModel(zone)
+    model = get_model(zone)
     model.train(
         start=pd.Timestamp("2023-01-01", tz="UTC"),
         end=pd.Timestamp("2023-12-31", tz="UTC"),
