@@ -67,7 +67,7 @@ class TFTPriceModel:
     def train(self, start: pd.Timestamp, end: pd.Timestamp):
         logger.info("Training model for zone=%s", self.zone)
 
-        df = self.load_training_data(start, end)
+        df = self._load_training_data(start, end)
         df = df.sort_index()
         df = self._add_features(df)
         df["time_idx"] = np.arange(len(df))
@@ -195,7 +195,7 @@ class TFTPriceModel:
     def predict(self, date_to_predict: pd.Timestamp | None = None):
         logger.info("Predicting for zone=%s", self.zone)
 
-        df = self.load_forecast_data(self, date_to_predict)
+        df = self._load_forecast_data(self, date_to_predict)
         df = self._add_features(df)
 
         df["time_idx"] = np.arange(
