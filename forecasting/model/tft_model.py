@@ -229,7 +229,7 @@ class TFTPriceModel:
         logger.info("Model loaded from %s", run_path)
         return instance
 
-    def _load_forecast_data(self, date_to_predict: pd.Timestamp) -> pd.DataFrame:
+    def _load_forecast_data(self, date_to_predict: pd.Timestamp | None = None) -> pd.DataFrame:
         forecast_start = date_to_predict
         forecast_end = forecast_start + timedelta(hours=DEFAULT_FORECAST_HOURS)
         history_start = forecast_start - timedelta(days=DEFAULT_HISTORY_DAYS)
@@ -249,20 +249,32 @@ class TFTPriceModel:
         logger.info("Predicting for %s", date_to_predict)
 
         df = self._load_forecast_data(date_to_predict)
+        # Only get the forecasting window and past data for encoder length
+        total_len = MAX_ENCODER_LENGTH + MAX_PREDICTION_LENGTH
+
+        df = df.iloc[-total_len:]
         df = self._add_features(df)
 
         # Align time_idx with the end of the training index
         df["time_idx"] = np.arange(len(df)) + (self.last_time_idx + 1)
 
         # TFT requirement: handle target column even in predict
-        df["price_eur_per_mwh"] = df["price_eur_per_mwh"].ffill()
+        df["price_is_missing"] = df["price_eur_per_mwh"].isna().astype(int)
+        df["price_eur_per_mwh"] = df["price_eur_per_mwh"].where(
+            df["price_is_missing"] == 0
+        ).ffill()
+
+        # ensure evaluation mode to avoid randomness
+        self.model.eval()
 
         dataset = TimeSeriesDataSet.from_dataset(
             self.training_dataset, df, predict=True, stop_randomization=True
         )
-        dl = dataset.to_dataloader(train=False, batch_size=BATCH_SIZE)
+        dl = dataset.to_dataloader(train=False, batch_size=1, num_workers=0) # only need to predict once
 
-        raw_preds, x = self.model.predict(dl, mode="raw", return_x=True)
+        with torch.no_grad():
+            raw_preds, x = self.model.predict(dl, mode="raw", return_x=True)
+
         preds = raw_preds["prediction"]
 
         # Extract timestamps from the decoder window

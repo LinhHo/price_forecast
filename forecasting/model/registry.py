@@ -1,6 +1,10 @@
 from model.tft_model import TFTPriceModel
 
 _MODEL_CACHE = {}
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def get_model(zone: str) -> TFTPriceModel:
     if zone not in _MODEL_CACHE:

@@ -19,12 +19,14 @@ MAX_EPOCHS = 5  # 30
 PROJECT_ROOT = Path(__file__).resolve().parents[1]  # /price_forecast
 
 LOG_DIR = PROJECT_ROOT / "logs"
-OUTPUT_DIR = PROJECT_ROOT / "output"
-AUTOMATIC_DIR = OUTPUT_DIR / "automatic"
-FIG_DIR = OUTPUT_DIR / "figures"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+AUTOMATIC_DIR = PROJECT_ROOT / "automatic"
+# OUTPUT_DIR = PROJECT_ROOT / "output"
+# AUTOMATIC_DIR = OUTPUT_DIR / "automatic"
+# FIG_DIR = OUTPUT_DIR / "figures"
 
-for p in [LOG_DIR, OUTPUT_DIR, AUTOMATIC_DIR, FIG_DIR]:
-    p.mkdir(parents=True, exist_ok=True)
+# for p in [LOG_DIR, OUTPUT_DIR, AUTOMATIC_DIR, FIG_DIR]:
+#     p.mkdir(parents=True, exist_ok=True)
 
 # Set-up logs
 # logging.basicConfig(
