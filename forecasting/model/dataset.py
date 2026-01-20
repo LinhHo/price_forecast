@@ -3,6 +3,7 @@ from pytorch_forecasting.data import GroupNormalizer
 
 TARGET = "price_eur_per_mwh"
 
+
 def build_dataset(df, max_encoder_length, max_prediction_length):
     return TimeSeriesDataSet(
         df,
@@ -24,6 +25,8 @@ def build_dataset(df, max_encoder_length, max_prediction_length):
             "ssrd",
             "u100",
             "v100",
+            "is_holiday",
+            "price_is_missing",
         ],
         time_varying_unknown_reals=[TARGET],
         time_varying_known_categoricals=["is_holiday"],

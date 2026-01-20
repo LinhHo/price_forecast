@@ -10,10 +10,11 @@ from lightning.pytorch import Trainer
 from pytorch_forecasting import TemporalFusionTransformer
 from pytorch_forecasting.metrics import QuantileLoss
 
-from data.era5 import load_era5
-from data.entsoe import load_prices
-from model.dataset import build_dataset
-from price_forecast.OLD_config import (
+from forecasting.data.era5 import load_era5
+from forecasting.data.entsoe import load_prices
+from forecasting.model.dataset import build_dataset
+from forecasting.data import io
+from price_forecast.config import (
     AUTOMATIC_DIR,
     BATCH_SIZE,
     MAX_EPOCHS,
@@ -35,6 +36,7 @@ class TFTPriceModel:
         self.training_dataset = None
         self.last_time_idx = None
 
+    @staticmethod
     def load_training_data(zone, start, end):
         df_weather = load_era5(zone, start, end)
         df_price = load_prices(zone, start, end)
@@ -87,57 +89,94 @@ class TFTPriceModel:
 
         trainer.fit(self.model, train_dl, val_dl)
 
-        self._save(trainer)
+        self._save(trainer, self.training_dataset)
 
     def _save(self, trainer: Trainer, training: TimeSeriesDataSet):
-        model_path = AUTOMATIC_DIR / f"{self.zone}_tft.ckpt"
-        trainer.save_checkpoint(model_path)
-        training.save(AUTOMATIC_DIR / f"{self.zone}_training_dataset.pt")
+        base = AUTOMATIC_DIR / self.zone
 
-        meta = {
-            "zone": self.zone,
-            "last_time_idx": int(self.last_time_idx),
-        }
+        io.save_checkpoint(
+            trainer,
+            base / "tft.ckpt",
+        )
 
-        with open(AUTOMATIC_DIR / f"{self.zone}_meta.json", "w") as f:
-            json.dump(meta, f)
+        io.save_tsd(
+            training,
+            base / "training_dataset.pt",
+        )
+
+        io.save_json(
+            {
+                "zone": self.zone,
+                "last_time_idx": int(self.last_time_idx),
+            },
+            base / "meta.json",
+        )
 
         logger.info("Model saved for zone=%s", self.zone)
 
     @classmethod
     def load(cls, zone: str):
+        base = AUTOMATIC_DIR / zone
         model = cls(zone)
-        model.training_dataset = torch.load(
-            AUTOMATIC_DIR / f"{zone}_training_dataset.pt", weights_only=False
-        )
 
-        with open(AUTOMATIC_DIR / f"{zone}_meta.json") as f:
-            meta = json.load(f)
+        model.training_dataset = io.load_tsd(base / "training_dataset.pt")
+
+        meta = io.load_json(base / "meta.json")
 
         model.last_time_idx = meta["last_time_idx"]
 
-        model.model = TemporalFusionTransformer.load_from_checkpoint(
-            AUTOMATIC_DIR / f"{zone}_tft.ckpt",
-            weights_only=False,
+        model.model = io.load_checkpoint(
+            TemporalFusionTransformer,
+            base / "tft.ckpt",
         )
 
         logger.info("Model loaded for zone=%s", zone)
         return model
 
-    # # model/tft_model.py
-    # class TFTPriceModel:
-    #     @classmethod
-    #     def load(cls, zone: str):
-    #         return cls(
-    #             zone=zone,
-    #             checkpoint=AUTOMATIC_DIR / f"{zone}_tft_price_model.ckpt",
-    #             dataset_dir=AUTOMATIC_DIR
-    #         )
+    # def predict(self, df_history: pd.DataFrame, df_future: pd.DataFrame):
+    #     df = pd.concat([df_history, df_future]).sort_index()
+    #     # index should continue from training dataset to keep the learned structure
+    #     df["time_idx"] = np.arange(
+    #         self.last_time_idx - len(df) + 1,
+    #         self.last_time_idx + 1,
+    #     )
+    #     df["price_eur_per_mwh"] = df["price_eur_per_mwh"].fillna(0.0)
+
+    #     dataset = TimeSeriesDataSet.from_dataset(
+    #         self.training_dataset,
+    #         df,
+    #         predict=True,
+    #         stop_randomization=True,
+    #     )
+
+    #     dl = dataset.to_dataloader(train=False, batch_size=BATCH_SIZE, num_workers=4)
+
+    #     raw_preds, x = self.model.predict(
+    #         dl,
+    #         mode="raw",
+    #         return_x=True,
+    #     )
+
+    #     preds = raw_preds["prediction"]  # (B, H, 3)
+
+    #     return {
+    #         "timestamp": x["decoder_time_idx"].cpu().numpy(),
+    #         "p10": preds[:, :, 0].cpu().numpy(),
+    #         "p50": preds[:, :, 1].cpu().numpy(),
+    #         "p90": preds[:, :, 2].cpu().numpy(),
+    #     }
 
     def predict(self, df_history: pd.DataFrame, df_future: pd.DataFrame):
         df = pd.concat([df_history, df_future]).sort_index()
-        df["time_idx"] = np.arange(len(df))
-        df["price_eur_per_mwh"] = df["price_eur_per_mwh"].fillna(0.0)
+
+        df["time_idx"] = np.arange(
+            self.last_time_idx - len(df) + 1,
+            self.last_time_idx + 1,
+        )
+
+        # Flag missing price to forecast before fill
+        df["price_is_missing"] = df["price_eur_per_mwh"].isna().astype(int)
+        df["price_eur_per_mwh"] = df["price_eur_per_mwh"].ffill()
 
         dataset = TimeSeriesDataSet.from_dataset(
             self.training_dataset,
@@ -148,21 +187,22 @@ class TFTPriceModel:
 
         dl = dataset.to_dataloader(train=False, batch_size=BATCH_SIZE, num_workers=4)
 
-        raw_preds, x = self.model.predict(
-            dl,
-            mode="raw",
-            return_x=True,
+        raw_preds, x = self.model.predict(dl, mode="raw", return_x=True)
+        preds = raw_preds["prediction"]
+
+        decoder_time_idx = x["decoder_time_idx"].cpu().numpy()
+        timestamps = np.take(df.index.values, decoder_time_idx)
+
+        return pd.DataFrame(
+            {
+                "timestamp": timestamps.flatten(),
+                "p10": preds[:, :, 0].cpu().numpy().flatten(),
+                "p50": preds[:, :, 1].cpu().numpy().flatten(),
+                "p90": preds[:, :, 2].cpu().numpy().flatten(),
+            }
         )
 
-        preds = raw_preds["prediction"]  # (B, H, 3)
-
-        return {
-            "timestamp": x["decoder_time_idx"].cpu().numpy(),
-            "p10": preds[:, :, 0].cpu().numpy(),
-            "p50": preds[:, :, 1].cpu().numpy(),
-            "p90": preds[:, :, 2].cpu().numpy(),
-        }
-
+    @staticmethod
     def resolve_prediction_window(date_to_predict=None):
         if date_to_predict is None:
             forecast_start = pd.Timestamp.utcnow().floor("h")
