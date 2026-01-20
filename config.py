@@ -1,4 +1,4 @@
-import Path
+from pathlib import Path
 
 # training
 TRAINING_LOOKBACK_DAYS = 60  # 365
@@ -14,7 +14,7 @@ BATCH_SIZE = 64
 MAX_EPOCHS = 10  # 30
 
 # paths
-PROJECT_ROOT = Path(__file__).resolve().parents[1] # /price_forecast
+PROJECT_ROOT = Path(__file__).resolve().parents[1]  # /price_forecast
 
 OUTPUT_DIR = PROJECT_ROOT / "output"
 AUTOMATIC_DIR = OUTPUT_DIR / "automatic"
@@ -22,4 +22,3 @@ FIG_DIR = OUTPUT_DIR / "figures"
 
 for p in [OUTPUT_DIR, AUTOMATIC_DIR, FIG_DIR]:
     p.mkdir(parents=True, exist_ok=True)
-
