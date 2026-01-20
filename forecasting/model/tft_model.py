@@ -229,15 +229,21 @@ class TFTPriceModel:
         logger.info("Model loaded from %s", run_path)
         return instance
 
-    def _load_forecast_data(self, date_to_predict: pd.Timestamp | None = None) -> pd.DataFrame:
+    def _load_forecast_data(
+        self, date_to_predict: pd.Timestamp | None = None
+    ) -> pd.DataFrame:
         forecast_start = date_to_predict
         forecast_end = forecast_start + timedelta(hours=DEFAULT_FORECAST_HOURS)
         history_start = forecast_start - timedelta(days=DEFAULT_HISTORY_DAYS)
 
         df_history = load_prices(self.zone, start=history_start, end=forecast_start)
-        df_future = load_forecast(self.zone, start=forecast_start, end=forecast_end)
+        df_future = load_forecast(
+            self.zone, start=forecast_start + pd.Timedelta(hours=1), end=forecast_end
+        )
+        df = pd.concat([df_history, df_future]).sort_index()
+        df = df[~df.index.duplicated(keep="last")]  # remove duplicates
 
-        return pd.concat([df_history, df_future]).sort_index()
+        return df
 
     def predict(self, date_to_predict: pd.Timestamp | None = None):
         if date_to_predict is None:
@@ -260,9 +266,9 @@ class TFTPriceModel:
 
         # TFT requirement: handle target column even in predict
         df["price_is_missing"] = df["price_eur_per_mwh"].isna().astype(int)
-        df["price_eur_per_mwh"] = df["price_eur_per_mwh"].where(
-            df["price_is_missing"] == 0
-        ).ffill()
+        df["price_eur_per_mwh"] = (
+            df["price_eur_per_mwh"].where(df["price_is_missing"] == 0).ffill()
+        )
 
         # ensure evaluation mode to avoid randomness
         self.model.eval()
@@ -270,7 +276,9 @@ class TFTPriceModel:
         dataset = TimeSeriesDataSet.from_dataset(
             self.training_dataset, df, predict=True, stop_randomization=True
         )
-        dl = dataset.to_dataloader(train=False, batch_size=1, num_workers=0) # only need to predict once
+        dl = dataset.to_dataloader(
+            train=False, batch_size=1, num_workers=0
+        )  # only need to predict once
 
         with torch.no_grad():
             raw_preds, x = self.model.predict(dl, mode="raw", return_x=True)
