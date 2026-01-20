@@ -54,7 +54,6 @@ class TFTPriceModel:
         return df
 
     ### Train ==========================================
-    @staticmethod
     def _load_training_data(
         self,
         start: pd.Timestamp,
