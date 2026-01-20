@@ -133,40 +133,9 @@ class TFTPriceModel:
         logger.info("Model loaded for zone=%s", zone)
         return model
 
-    # def predict(self, df_history: pd.DataFrame, df_future: pd.DataFrame):
-    #     df = pd.concat([df_history, df_future]).sort_index()
-    #     # index should continue from training dataset to keep the learned structure
-    #     df["time_idx"] = np.arange(
-    #         self.last_time_idx - len(df) + 1,
-    #         self.last_time_idx + 1,
-    #     )
-    #     df["price_eur_per_mwh"] = df["price_eur_per_mwh"].fillna(0.0)
-
-    #     dataset = TimeSeriesDataSet.from_dataset(
-    #         self.training_dataset,
-    #         df,
-    #         predict=True,
-    #         stop_randomization=True,
-    #     )
-
-    #     dl = dataset.to_dataloader(train=False, batch_size=BATCH_SIZE, num_workers=4)
-
-    #     raw_preds, x = self.model.predict(
-    #         dl,
-    #         mode="raw",
-    #         return_x=True,
-    #     )
-
-    #     preds = raw_preds["prediction"]  # (B, H, 3)
-
-    #     return {
-    #         "timestamp": x["decoder_time_idx"].cpu().numpy(),
-    #         "p10": preds[:, :, 0].cpu().numpy(),
-    #         "p50": preds[:, :, 1].cpu().numpy(),
-    #         "p90": preds[:, :, 2].cpu().numpy(),
-    #     }
-
     def predict(self, df_history: pd.DataFrame, df_future: pd.DataFrame):
+        logger.info("Predicting for zone=%s", self.zone)
+
         df = pd.concat([df_history, df_future]).sort_index()
 
         df["time_idx"] = np.arange(
