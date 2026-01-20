@@ -6,7 +6,7 @@ import time
 import os
 import logging
 
-from price_forecast.OLD_config import TRAINING_START, TRAINING_END
+from price_forecast.config import TRAINING_START, TRAINING_END
 
 
 def get_era5_token() -> str:

@@ -36,7 +36,7 @@ checkpoints/
 # =========================
 # Data (DO NOT COMMIT)
 # =========================
-data/
+# data/
 datasets/
 *.csv
 *.parquet
@@ -47,6 +47,7 @@ datasets/
 # =========================
 output/
 outputs/
+automatic/
 figures/
 *.png
 *.jpg

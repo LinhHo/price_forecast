@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 import requests
 import os
 
-from price_forecast.OLD_config import TRAINING_START, TRAINING_END
+from price_forecast.config import TRAINING_START, TRAINING_END
 
 
 def get_entsoe_token() -> str:
