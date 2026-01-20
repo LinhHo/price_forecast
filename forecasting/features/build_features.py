@@ -38,5 +38,11 @@ def add_features(df: pd.DataFrame, zone: str) -> pd.DataFrame:
     df = add_time_features(df)
     df = add_holiday_feature(df)
     df = add_zone(df, zone)
-    df["price_is_missing"] = 0  # mark non-missing target for training
+
+    # mark non-missing target for training
+    if "price_eur_per_mwh" in df.columns:
+        df["price_is_missing"] = df["price_eur_per_mwh"].isna().astype(int)
+    else:
+        df["price_is_missing"] = 1
+
     return df

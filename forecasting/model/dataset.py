@@ -25,7 +25,6 @@ def build_dataset(df, max_encoder_length, max_prediction_length):
             "ssrd",
             "u100",
             "v100",
-            "is_holiday",
             "price_is_missing",
         ],
         time_varying_unknown_reals=[TARGET],

@@ -49,9 +49,7 @@ class TFTPriceModel:
         if not isinstance(df.index, pd.DatetimeIndex):
             raise ValueError("DataFrame index must be DatetimeIndex")
 
-        df = add_features(df, self.zone)
-
-        return df
+        return add_features(df, self.zone)
 
     ### Train ==========================================
     def _load_training_data(
@@ -61,7 +59,7 @@ class TFTPriceModel:
     ) -> pd.DataFrame:
         df_weather = load_era5(self.zone, start, end)
         df_price = load_prices(self.zone, start, end)
-        return df_weather.join(df_price)
+        return df_weather.join(df_price, how="inner")
 
     def train(self, start: pd.Timestamp, end: pd.Timestamp):
         logger.info("Training model for zone=%s", self.zone)
@@ -166,9 +164,6 @@ class TFTPriceModel:
             df_history: past data with prices
             df_future: future data without prices
         """
-        # history_start: pd.Timestamp,
-        # forecast_start: pd.Timestamp,
-        # forecast_end: pd.Timestamp,
         # If not specify, predict for today
         if date_to_predict is None:
             forecast_start = dt.today()  # Default to predict 24h from today
@@ -194,7 +189,7 @@ class TFTPriceModel:
     def predict(self, date_to_predict: pd.Timestamp | None = None):
         logger.info("Predicting for zone=%s", self.zone)
 
-        df = self._load_forecast_data(self, date_to_predict)
+        df = self._load_forecast_data(date_to_predict)
         df = self._add_features(df)
 
         df["time_idx"] = np.arange(
