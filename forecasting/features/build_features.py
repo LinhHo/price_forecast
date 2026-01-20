@@ -7,7 +7,6 @@ import pandas as pd
 from forecasting.data.holidays import HOLIDAYS
 
 
-
 def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["hour_of_day"] = df.index.hour
@@ -33,9 +32,11 @@ def add_zone(df: pd.DataFrame, zone: str) -> pd.DataFrame:
     df["zone"] = zone
     return df
 
+
 def add_features(df: pd.DataFrame, zone: str) -> pd.DataFrame:
     df = df.copy()
     df = add_time_features(df)
     df = add_holiday_feature(df)
     df = add_zone(df, zone)
+    df["price_is_missing"] = 0  # mark non-missing target for training
     return df
