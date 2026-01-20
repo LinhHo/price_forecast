@@ -2,8 +2,10 @@ import pandas as pd
 from dateutil.parser import isoparse
 from datetime import timedelta, date
 import xml.etree.ElementTree as ET
+import datetime as dt
 import requests
 import os
+import logging
 
 
 def get_entsoe_token() -> str:
@@ -14,8 +16,6 @@ def get_entsoe_token() -> str:
     return token.strip().strip('"').strip("'")
 
 
-import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -23,6 +23,13 @@ def load_prices(zone: str, start, end, is_training: bool = True) -> pd.DataFrame
     """
     Returns hourly or 15-min electricity prices indexed by UTC timestamp
     """
+
+    # 1. Convert string inputs to datetime objects if they aren't already
+    if isinstance(start, str):
+        # Adjust the format "%Y-%m-%d" to match how you write years in your config
+        start = dt.strptime(start, "%Y-%m-%d")
+    if isinstance(end, str):
+        end = dt.datetime.strptime(end, "%Y-%m-%d")
 
     if is_training:
         start_dt = start
