@@ -7,6 +7,8 @@ import requests
 import os
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 def get_entsoe_token() -> str:
     token = os.getenv("ENTSOE_TOKEN")
@@ -15,8 +17,6 @@ def get_entsoe_token() -> str:
 
     return token.strip().strip('"').strip("'")
 
-
-logger = logging.getLogger(__name__)
 
 # Bidding Zone (BZN) EIC Mapping
 # https://transparencyplatform.zendesk.com/hc/en-us/articles/15885757676308-Area-List-with-Energy-Identification-Code-EIC

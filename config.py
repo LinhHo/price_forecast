@@ -26,6 +26,14 @@ for p in [LOG_DIR, OUTPUT_DIR, AUTOMATIC_DIR, FIG_DIR]:
     p.mkdir(parents=True, exist_ok=True)
 
 # Set-up logs
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_DIR / "app.log"),
+        logging.StreamHandler(),  # still prints to console
+    ],
+)
 
 
 def setup_logging(log_level=logging.INFO, log_dir=LOG_DIR):
