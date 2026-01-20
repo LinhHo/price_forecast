@@ -13,6 +13,7 @@ from pytorch_forecasting.metrics import QuantileLoss
 from forecasting.data.era5 import load_era5
 from forecasting.data.entsoe import load_prices
 from forecasting.model.dataset import build_dataset
+from forecasting.features.build_features import add_features
 from forecasting.data import io
 from price_forecast.config import (
     AUTOMATIC_DIR,
@@ -36,6 +37,17 @@ class TFTPriceModel:
         self.training_dataset = None
         self.last_time_idx = None
 
+    def _add_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Apply feature engineering consistently for training and prediction
+        """
+        if not isinstance(df.index, pd.DatetimeIndex):
+            raise ValueError("DataFrame index must be DatetimeIndex")
+
+        df = add_features(df, self.zone)
+
+        return df
+
     @staticmethod
     def load_training_data(zone, start, end):
         df_weather = load_era5(zone, start, end)
@@ -46,6 +58,7 @@ class TFTPriceModel:
         logger.info("Training model for zone=%s", self.zone)
 
         df = df.sort_index()
+        df = self._add_features(df)
         df["time_idx"] = np.arange(len(df))
 
         self.last_time_idx = df["time_idx"].max()
@@ -137,6 +150,7 @@ class TFTPriceModel:
         logger.info("Predicting for zone=%s", self.zone)
 
         df = pd.concat([df_history, df_future]).sort_index()
+        df = self._add_features(df)
 
         df["time_idx"] = np.arange(
             self.last_time_idx - len(df) + 1,
