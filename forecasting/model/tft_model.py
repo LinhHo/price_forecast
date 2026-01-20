@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import pandas as pd
 from lightning.pytorch import Trainer
-from pytorch_forecasting import TemporalFusionTransformer
+from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
 from pytorch_forecasting.metrics import QuantileLoss
 
 from forecasting.data.era5 import load_era5
