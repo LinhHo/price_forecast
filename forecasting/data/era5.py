@@ -6,8 +6,6 @@ import time
 import os
 import logging
 
-from price_forecast.config import TRAINING_START, TRAINING_END
-
 
 def get_era5_token() -> str:
     token = os.getenv("ERA5_TOKEN")
@@ -45,7 +43,7 @@ def open_era5_zarr(url, retries=3, delay=3):
             time.sleep(delay)
 
 
-def load_era5(zone: str) -> pd.DataFrame:
+def load_era5(zone: str, start, end) -> pd.DataFrame:
     """
     Load ERA5 data for training the model, same length as ENTSOE price data
 
@@ -67,7 +65,7 @@ def load_era5(zone: str) -> pd.DataFrame:
         da = ds[v].sel(
             latitude=slice(max_lat, min_lat),
             longitude=slice(min_lon, max_lon),
-            valid_time=slice(TRAINING_START, TRAINING_END),
+            valid_time=slice(start, end),
         )
         df[v] = da.mean(dim=["latitude", "longitude"]).to_series()
         df[v].attrs["units"] = era5_vars_units[v]

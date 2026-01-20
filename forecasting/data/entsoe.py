@@ -5,8 +5,6 @@ import xml.etree.ElementTree as ET
 import requests
 import os
 
-from price_forecast.config import TRAINING_START, TRAINING_END
-
 
 def get_entsoe_token() -> str:
     token = os.getenv("ENTSOE_TOKEN")
@@ -21,14 +19,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def load_prices(zone: str, is_training: bool = True) -> pd.DataFrame:
+def load_prices(zone: str, start, end, is_training: bool = True) -> pd.DataFrame:
     """
     Returns hourly or 15-min electricity prices indexed by UTC timestamp
     """
 
     if is_training:
-        start_dt = TRAINING_START
-        end_dt = TRAINING_END
+        start_dt = start
+        end_dt = end
     else:
         end_dt = date.today()
         start_dt = end_dt - timedelta(days=7)
