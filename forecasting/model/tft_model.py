@@ -6,12 +6,17 @@ import json
 import numpy as np
 import torch
 import pandas as pd
+import datetime as dt
+from datetime import date, timedelta
+
+
 from lightning.pytorch import Trainer
 from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
 from pytorch_forecasting.metrics import QuantileLoss
 
 from forecasting.data.era5 import load_era5
 from forecasting.data.entsoe import load_prices
+from forecasting.data.open_meteo import load_forecast
 from forecasting.model.dataset import build_dataset
 from forecasting.features.build_features import add_features
 from forecasting.data import io
@@ -48,15 +53,21 @@ class TFTPriceModel:
 
         return df
 
+    ### Train ==========================================
     @staticmethod
-    def load_training_data(zone, start, end):
-        df_weather = load_era5(zone, start, end)
-        df_price = load_prices(zone, start, end)
+    def _load_training_data(
+        self,
+        start: pd.Timestamp,
+        end: pd.Timestamp,
+    ) -> pd.DataFrame:
+        df_weather = load_era5(self.zone, start, end)
+        df_price = load_prices(self.zone, start, end)
         return df_weather.join(df_price)
 
-    def train(self, df: pd.DataFrame):
+    def train(self, start: pd.Timestamp, end: pd.Timestamp):
         logger.info("Training model for zone=%s", self.zone)
 
+        df = self.load_training_data(start, end)
         df = df.sort_index()
         df = self._add_features(df)
         df["time_idx"] = np.arange(len(df))
@@ -127,6 +138,7 @@ class TFTPriceModel:
 
         logger.info("Model saved for zone=%s", self.zone)
 
+    ### Predict ==========================================
     @classmethod
     def load(cls, zone: str):
         base = AUTOMATIC_DIR / zone
@@ -146,10 +158,44 @@ class TFTPriceModel:
         logger.info("Model loaded for zone=%s", zone)
         return model
 
-    def predict(self, df_history: pd.DataFrame, df_future: pd.DataFrame):
+    def _load_forecast_data(
+        self,
+        date_to_predict: pd.Timestamp | None = None,
+    ) -> pd.DataFrame:
+        """
+        Returns: concat of
+            df_history: past data with prices
+            df_future: future data without prices
+        """
+        # history_start: pd.Timestamp,
+        # forecast_start: pd.Timestamp,
+        # forecast_end: pd.Timestamp,
+        # If not specify, predict for today
+        if date_to_predict is None:
+            forecast_start = dt.today()  # Default to predict 24h from today
+        else:
+            forecast_start = date_to_predict
+        forecast_end = date_to_predict + timedelta(hours=DEFAULT_FORECAST_HOURS)
+        history_start = date_to_predict - timedelta(days=DEFAULT_HISTORY_DAYS)
+
+        df_history = load_prices(
+            self.zone,
+            start=history_start,
+            end=forecast_start,
+        )
+
+        df_future = load_forecast(
+            self.zone,
+            start=forecast_start,
+            end=forecast_end,
+        )
+
+        return pd.concat([df_history, df_future]).sort_index()
+
+    def predict(self, date_to_predict: pd.Timestamp | None = None):
         logger.info("Predicting for zone=%s", self.zone)
 
-        df = pd.concat([df_history, df_future]).sort_index()
+        df = self.load_forecast_data(self, date_to_predict)
         df = self._add_features(df)
 
         df["time_idx"] = np.arange(

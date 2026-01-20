@@ -14,7 +14,7 @@ from datetime import datetime as dt, timedelta
 from data.era5 import get_bounds_zone
 
 
-def load_forecast(zone: str, date_to_predict=None) -> pd.DataFrame:
+def load_forecast(zone: str, start, end) -> pd.DataFrame:
     """
     Returns past 7 days + next 24h weather with correct time_idx continuation
     """
@@ -25,12 +25,8 @@ def load_forecast(zone: str, date_to_predict=None) -> pd.DataFrame:
     sel_lat = (min_lat + max_lat) / 2
     sel_lon = (min_lon + max_lon) / 2
 
-    # If not specify, predict for today
-    if date_to_predict is None:
-        date_to_predict = dt.today()  # Must include () to call the function
-
-    end_day = date_to_predict.strftime("%Y-%m-%d")
-    start_day = (date_to_predict - timedelta(days=7)).strftime("%Y-%m-%d")
+    start_day = start.strftime("%Y-%m-%d")
+    end_day = end.strftime("%Y-%m-%d")
 
     url = (
         "https://api.open-meteo.com/v1/forecast"
@@ -42,8 +38,6 @@ def load_forecast(zone: str, date_to_predict=None) -> pd.DataFrame:
         "&models=best_match"
         f"&time_mode=time_interval&start_date={start_day}"
         f"&end_date={end_day}"
-        # "&forecast_days=1"
-        # "&past_days=7"
     )
 
     df = (

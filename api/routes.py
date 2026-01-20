@@ -11,6 +11,15 @@ from data.open_meteo import load_forecast
 
 router = APIRouter()
 
+@router.post("/train/{zone}")
+def train(zone: str):
+    model = TFTPriceModel(zone)
+    model.train(
+        start=pd.Timestamp("2023-01-01", tz="UTC"),
+        end=pd.Timestamp("2023-12-31", tz="UTC"),
+    )
+    return {"status": "ok"}
+
 
 # @router.get("/forecast/{zone}")
 # def forecast(zone: str):

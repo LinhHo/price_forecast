@@ -97,27 +97,13 @@ def get_zone_code(zone: str) -> str:
         )
 
 
-def load_prices(zone: str, start, end, is_training: bool = True) -> pd.DataFrame:
+def load_prices(zone: str, start, end) -> pd.DataFrame:
     """
     Returns hourly or 15-min electricity prices indexed by UTC timestamp
     """
 
-    # 1. Convert string inputs to datetime objects if they aren't already
-    if isinstance(start, str):
-        # Adjust the format "%Y-%m-%d" to match how you write years in your config
-        start = dt.datetime.strptime(start, "%Y-%m-%d")
-    if isinstance(end, str):
-        end = dt.datetime.strptime(end, "%Y-%m-%d")
-
-    if is_training:
-        start_dt = start
-        end_dt = end
-    else:
-        end_dt = date.today()
-        start_dt = end_dt - timedelta(days=7)
-
-    time_start = start_dt.strftime("%Y%m%d0000")
-    time_end = end_dt.strftime("%Y%m%d0000")
+    time_start = start.strftime("%Y%m%d0000")
+    time_end = end.strftime("%Y%m%d0000")
 
     # Look up the code for bidding zone
     zone_code = get_zone_code(zone)
