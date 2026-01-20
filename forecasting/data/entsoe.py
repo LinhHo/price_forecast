@@ -27,7 +27,7 @@ def load_prices(zone: str, start, end, is_training: bool = True) -> pd.DataFrame
     # 1. Convert string inputs to datetime objects if they aren't already
     if isinstance(start, str):
         # Adjust the format "%Y-%m-%d" to match how you write years in your config
-        start = dt.strptime(start, "%Y-%m-%d")
+        start = dt.datetime.strptime(start, "%Y-%m-%d")
     if isinstance(end, str):
         end = dt.datetime.strptime(end, "%Y-%m-%d")
 
