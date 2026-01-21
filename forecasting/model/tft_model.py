@@ -310,8 +310,7 @@ class TFTPriceModel:
         # index values for the prediction period
         df_predict = pd.DataFrame(
             {
-                "timestamp": df.index.values,
-                "entsoe": df["price_eur_per_mwh"],
+                "time_idx": np.arange(len(preds)),
                 "p10": preds[0, :, 0].cpu().numpy().flatten(),
                 "p50": preds[0, :, 1].cpu().numpy().flatten(),
                 "p90": preds[0, :, 2].cpu().numpy().flatten(),
@@ -326,44 +325,22 @@ class TFTPriceModel:
         df_predict.to_csv(out_path, index=False)
 
         # Plot timeseries of past prices and forecast with different colours with range p10-90
-        # toplot = df.copy()["price_eur_per_mwh"].to_frame()1
-        # toplot["label"] = "ENTSOE price"
-        # toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "label"] = "TFT forecast"
-        # toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "price_eur_per_mwh"] = (
-        #     df_predict["p50"].values
-        # )
-        # # add range p10-90 only for forecasting window
-        # toplot["p10"] = toplot["price_eur_per_mwh"]
-        # toplot["p90"] = toplot["price_eur_per_mwh"]
-        # toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "p10"] = df_predict[
-        #     "p10"
-        # ].values
-        # toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "p90"] = df_predict[
-        #     "p90"
-        # ].values
-
-        # plt.figure(figsize=(12, 4))
-
-        # for label, g in toplot.groupby("label"):
-        #     plt.fill_between(
-        #         g["time"], g["p90"], g["p10"], alpha=0.3, facecolor="orange"
-        #     )
-        #     plt.plot(g["time"], g["price_eur_per_mwh"], label=label)
-
-        # plt.grid("major")
-        # plt.ylabel("Price [EUR/MWh]")
-        # plt.legend()
+        toplot = df.copy()["price_eur_per_mwh"].to_frame()
+        toplot["label"] = "ENTSOE price"
+        toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "label"] = "TFT forecast"
+        for var in ["p10", "p50", "p90"]:
+            toplot[var] = toplot["price_eur_per_mwh"]
+            toplot[var].iloc[-MAX_PREDICTION_LENGTH:] = df_predict[var].values
 
         plt.figure(figsize=(12, 4))
-        plt.plot(df_predict["entsoe"], label="ENTSOE price")
-        plt.plot(df_predict["p50"], label="TFT forecast")
-        plt.fill_between(
-            df_predict["timestamp"],
-            df_predict["p90"],
-            df_predict["p10"],
-            alpha=0.3,
-            facecolor="orange",
-        )
+
+        for label, g in toplot.groupby("label"):
+            plt.fill_between(g.index, g["p90"], g["p10"], alpha=0.3, facecolor="orange")
+            plt.plot(g.index, g["price_eur_per_mwh"], label=label)
+
+        plt.grid("major")
+        plt.ylabel("Price [EUR/MWh]")
+        plt.legend()
 
         plt.savefig(
             self.run_dir
