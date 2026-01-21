@@ -342,7 +342,7 @@ class TFTPriceModel:
         toplot["label"] = "ENTSOE price"
         toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "label"] = "TFT forecast"
         toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "price_eur_per_mwh"] = (
-            df_predict["p50"]
+            df_predict["p50"].values
         )
         for var in ["p10", "p90"]:
             toplot[var] = toplot["price_eur_per_mwh"]
