@@ -301,7 +301,7 @@ class TFTPriceModel:
         )  # only need to predict once
 
         with torch.no_grad():
-            raw_preds, x, _ = self.model.predict(dl, mode="raw", return_x=True)
+            raw_preds, *rest = self.model.predict(dl, mode="raw", return_x=True)
 
         preds = raw_preds["prediction"]
 
