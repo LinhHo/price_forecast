@@ -76,7 +76,13 @@ class TFTPriceModel:
         df_weather = load_era5(self.zone, start, end)
         return df_price.join(df_weather, how="left").ffill().bfill()
 
-    def train(self, start: pd.Timestamp, end: pd.Timestamp):
+    def train(
+        self,
+        start: pd.Timestamp,
+        end: pd.Timestamp,
+        max_epochs=max_epochs,
+        batch_size=batch_size,
+    ):
         logger.info("Training model for zone=%s in %s", self.zone, self.run_dir)
         self._ensure_dirs()
 
@@ -105,10 +111,10 @@ class TFTPriceModel:
         )
 
         train_dl = self.training_dataset.to_dataloader(
-            train=True, batch_size=BATCH_SIZE, num_workers=4
+            train=True, batch_size=batch_size, num_workers=4
         )
         val_dataloader = val_dataset.to_dataloader(
-            train=False, batch_size=BATCH_SIZE, num_workers=4
+            train=False, batch_size=batch_size, num_workers=4
         )
 
         self.model = TemporalFusionTransformer.from_dataset(
@@ -124,7 +130,6 @@ class TFTPriceModel:
             accelerator="gpu" if torch.cuda.is_available() else "cpu",
             devices=1,
             max_epochs=max_epochs,
-            batch_size=batch_size,
         )
 
         trainer.fit(self.model, train_dl, val_dataloader)
