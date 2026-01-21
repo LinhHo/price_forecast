@@ -150,4 +150,5 @@ def load_prices(zone: str, start, end) -> pd.DataFrame:
 
     df_price = pd.DataFrame(records).set_index("timestamp").sort_index()
 
-    return df_price
+    # to match with ERA5
+    return df_price.resample("h").mean()

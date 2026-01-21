@@ -28,7 +28,7 @@ from price_forecast.config import (
     MAX_EPOCHS,
     MAX_ENCODER_LENGTH,
     MAX_PREDICTION_LENGTH,
-    DEFAULT_HISTORY_DAYS,
+    DEFAULT_HISTORY_HOURS,
     DEFAULT_FORECAST_HOURS,
 )
 
@@ -229,27 +229,47 @@ class TFTPriceModel:
         logger.info("Model loaded from %s", run_path)
         return instance
 
+    # def _load_forecast_data(
+    #     self, date_to_predict: pd.Timestamp | None = None
+    # ) -> pd.DataFrame:
+    #     forecast_start = date_to_predict
+    #     forecast_end = forecast_start + timedelta(hours=DEFAULT_FORECAST_HOURS)
+    #     history_start = forecast_start - timedelta(hours=DEFAULT_HISTORY_HOURS)
+
+    #     df_history = load_prices(self.zone, start=history_start, end=forecast_start)
+    #     df_future = load_forecast(
+    #         self.zone, start=forecast_start + pd.Timedelta(hours=1), end=forecast_end
+    #     )
+    #     df = pd.concat([df_history, df_future]).sort_index()
+    #     df = df[~df.index.duplicated(keep="last")]  # remove duplicates
+
+    #     return df
+
     def _load_forecast_data(
         self, date_to_predict: pd.Timestamp | None = None
     ) -> pd.DataFrame:
         forecast_start = date_to_predict
-        forecast_end = forecast_start + timedelta(hours=DEFAULT_FORECAST_HOURS)
-        history_start = forecast_start - timedelta(days=DEFAULT_HISTORY_DAYS)
+        forecast_end = forecast_start + timedelta(
+            hours=DEFAULT_FORECAST_HOURS
+        )  # to cover mid-day forecast to the next 24h
+        history_start = forecast_start - timedelta(hours=DEFAULT_HISTORY_HOURS)
+        print(history_start, forecast_start, forecast_end)
 
-        df_history = load_prices(self.zone, start=history_start, end=forecast_start)
-        df_future = load_forecast(
-            self.zone, start=forecast_start + pd.Timedelta(hours=1), end=forecast_end
-        )
-        df = pd.concat([df_history, df_future]).sort_index()
-        df = df[~df.index.duplicated(keep="last")]  # remove duplicates
+        # ENTSO-E returns day-ahead price by day
+        entsoe = load_prices(self.zone, start=history_start, end=forecast_start).loc[
+            history_start:forecast_start
+        ]
+        open_meteo = load_forecast(
+            self.zone, start=history_start, end=forecast_end
+        ).loc[history_start:forecast_end]
 
-        return df
+        return open_meteo.join(entsoe, how="left")
 
     def predict(self, date_to_predict: pd.Timestamp | None = None):
         if date_to_predict is None:
-            date_to_predict = pd.Timestamp.now().floor("h")
+            date_to_predict = pd.Timestamp.now().floor("h").tz_localize("UTC")
         else:
-            date_to_predict = pd.Timestamp(date_to_predict)
+            date_to_predict = pd.Timestamp(date_to_predict).tz_localize("UTC")
 
         self._ensure_dirs()
         logger.info("Predicting for %s", date_to_predict)
@@ -289,7 +309,10 @@ class TFTPriceModel:
         # index values for the prediction period
         df_predict = pd.DataFrame(
             {
-                "timestamp": df.index[-MAX_PREDICTION_LENGTH:],
+                "timestamp": df.index.values,
+                "entsoe": df["price_eur_per_mwh"].iloc[
+                    -total_len:-DEFAULT_FORECAST_HOURS
+                ],
                 "p10": preds[0, :, 0].cpu().numpy().flatten(),
                 "p50": preds[0, :, 1].cpu().numpy().flatten(),
                 "p90": preds[0, :, 2].cpu().numpy().flatten(),
@@ -304,33 +327,44 @@ class TFTPriceModel:
         df_predict.to_csv(out_path, index=False)
 
         # Plot timeseries of past prices and forecast with different colours with range p10-90
-        toplot = df.copy()["price_eur_per_mwh"].to_frame()
-        toplot["label"] = "ENTSOE price"
-        toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "label"] = "TFT forecast"
-        toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "price_eur_per_mwh"] = (
-            df_predict["p50"].values
-        )
-        # add range p10-90 only for forecasting window
-        toplot["p10"] = toplot["price_eur_per_mwh"]
-        toplot["p90"] = toplot["price_eur_per_mwh"]
-        toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "p10"] = df_predict[
-            "p10"
-        ].values
-        toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "p90"] = df_predict[
-            "p90"
-        ].values
+        # toplot = df.copy()["price_eur_per_mwh"].to_frame()1
+        # toplot["label"] = "ENTSOE price"
+        # toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "label"] = "TFT forecast"
+        # toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "price_eur_per_mwh"] = (
+        #     df_predict["p50"].values
+        # )
+        # # add range p10-90 only for forecasting window
+        # toplot["p10"] = toplot["price_eur_per_mwh"]
+        # toplot["p90"] = toplot["price_eur_per_mwh"]
+        # toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "p10"] = df_predict[
+        #     "p10"
+        # ].values
+        # toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "p90"] = df_predict[
+        #     "p90"
+        # ].values
+
+        # plt.figure(figsize=(12, 4))
+
+        # for label, g in toplot.groupby("label"):
+        #     plt.fill_between(
+        #         g["time"], g["p90"], g["p10"], alpha=0.3, facecolor="orange"
+        #     )
+        #     plt.plot(g["time"], g["price_eur_per_mwh"], label=label)
+
+        # plt.grid("major")
+        # plt.ylabel("Price [EUR/MWh]")
+        # plt.legend()
 
         plt.figure(figsize=(12, 4))
-
-        for label, g in toplot.groupby("label"):
-            plt.fill_between(
-                g["time"], g["p90"], g["p10"], alpha=0.3, facecolor="orange"
-            )
-            plt.plot(g["time"], g["price_eur_per_mwh"], label=label)
-
-        plt.grid("major")
-        plt.ylabel("Price [EUR/MWh]")
-        plt.legend()
+        plt.plot(df_predict["entsoe"], label="ENTSOE price")
+        plt.plot(df_predict["p50"], label="TFT forecast")
+        plt.fill_between(
+            df_predict["timestamp"],
+            df_predict["p90"],
+            df_predict["p10"],
+            alpha=0.3,
+            facecolor="orange",
+        )
 
         plt.savefig(
             self.run_dir
