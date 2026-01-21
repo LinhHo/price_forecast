@@ -1,49 +1,26 @@
-"""
-HTTP layer
-"""
-
-# api/routes.py
+from fastapi import APIRouter, Depends, HTTPException
+from forecasting.model.registry import get_model
 import pandas as pd
-from fastapi import APIRouter
-from model.registry import get_model
-from data.entsoe import load_prices
-from data.open_meteo import load_forecast
-
+import os
 
 router = APIRouter()
 
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN")
+
+
+def require_admin(token: str):
+    if token != ADMIN_TOKEN:
+        raise HTTPException(403, "Forbidden")
+
+
+@router.get("/forecast/{zone}")
+def forecast(zone: str, date: str | None = None):
+    model = get_model(zone)
+    preds = model.predict(date)
+    return preds
+
 
 @router.post("/train/{zone}")
-def train(zone: str):
-    model = get_model(zone)
-    model.train(
-        start=pd.Timestamp("2023-01-01", tz="UTC"),
-        end=pd.Timestamp("2023-12-31", tz="UTC"),
-    )
-    return {"status": "ok"}
-
-
-# @router.get("/forecast/{zone}")
-# def forecast(zone: str):
-#     model = get_model(zone)
-# model = TFTPriceModel.load(zone)
-
-#     df_hist = load_prices(zone, is_training=False)
-#     df_future = load_forecast(zone)
-
-#     preds = model.predict(df_hist, df_future)
-#     return preds.to_dict(orient="records")
-
-
-# @app.get("/forecast/{zone}")
-@router.get("/forecast/{zone}")
-def forecast(zone: str):
-    model = get_model(zone)
-
-    historic_start, forecast_start, forecast_end = model.resolve_prediction_window()
-
-    df_history = load_prices(zone, historic_start, forecast_start)
-    df_future = load_forecast(zone, forecast_start, forecast_end)
-
-    preds = model.predict(df_history, df_future)
-    return preds.to_dict(orient="records")
+def train(zone: str, token: str):
+    require_admin(token)
+    return {"status": "disabled", "reason": "Training runs in Colab only"}

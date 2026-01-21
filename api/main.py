@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 from api.routes import router
 
-app = FastAPI(title="Price Forecast API")
-app.include_router(router)
+app = FastAPI(title="Electricity Price Forecast")
 
-# from forecasting.data.io import read_parquet
-# df = read_parquet(AUTOMATIC_DIR / "NL" / "latest" / "training_data.parquet")
+app.include_router(router)

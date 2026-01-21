@@ -242,47 +242,57 @@ class TFTPriceModel:
         logger.info("Model loaded from %s", run_path)
         return instance
 
-    # def _load_forecast_data(
-    #     self, date_to_predict: pd.Timestamp | None = None
-    # ) -> pd.DataFrame:
-    #     forecast_start = date_to_predict
-    #     forecast_end = forecast_start + timedelta(hours=DEFAULT_FORECAST_HOURS)
-    #     history_start = forecast_start - timedelta(hours=DEFAULT_HISTORY_HOURS)
+    def _resolve_forecast_window(
+        self,
+        date_to_predict: pd.Timestamp | None,
+    ) -> tuple[pd.Timestamp, pd.Timestamp, pd.Timestamp]:
+        if date_to_predict is None:
+            forecast_start = pd.Timestamp.now().floor("h")
+        else:
+            forecast_start = pd.Timestamp(date_to_predict)
 
-    #     df_history = load_prices(self.zone, start=history_start, end=forecast_start)
-    #     df_future = load_forecast(
-    #         self.zone, start=forecast_start + pd.Timedelta(hours=1), end=forecast_end
-    #     )
-    #     df = pd.concat([df_history, df_future]).sort_index()
-    #     df = df[~df.index.duplicated(keep="last")]  # remove duplicates
+        if forecast_start.tzinfo is None:
+            forecast_start = forecast_start.tz_localize("UTC")
 
-    #     return df
+        history_start = forecast_start - timedelta(hours=DEFAULT_HISTORY_HOURS)
+        forecast_end = forecast_start + timedelta(hours=DEFAULT_FORECAST_HOURS)
+
+        return history_start, forecast_start, forecast_end
 
     def _load_forecast_data(
-        self, date_to_predict: pd.Timestamp | None = None
+        self,
+        date_to_predict: pd.Timestamp | None = None,
     ) -> pd.DataFrame:
-        forecast_start = date_to_predict
-        forecast_end = forecast_start + timedelta(
-            hours=DEFAULT_FORECAST_HOURS
-        )  # to cover mid-day forecast to the next 24h
-        history_start = forecast_start - timedelta(hours=DEFAULT_HISTORY_HOURS)
-        print(history_start, forecast_start, forecast_end)
+        history_start, forecast_start, forecast_end = self._resolve_forecast_window(
+            date_to_predict
+        )
+
+        logger.info(
+            "Forecast window | history=%s forecast=%s → %s",
+            history_start,
+            forecast_start,
+            forecast_end,
+        )
 
         # ENTSO-E returns day-ahead price by day
-        entsoe = load_prices(self.zone, start=history_start, end=forecast_start).loc[
-            history_start:forecast_start
-        ]
-        open_meteo = load_forecast(
-            self.zone, start=history_start, end=forecast_end
+        # .loc time again to make sure getting 24h, might not the end of the day 23:00:00
+        prices = load_prices(
+            self.zone,
+            start=history_start,
+            end=forecast_start,
+        ).loc[history_start:forecast_start]
+
+        weather = load_forecast(
+            self.zone,
+            start=history_start,
+            end=forecast_end,
         ).loc[history_start:forecast_end]
 
-        return open_meteo.join(entsoe, how="left")
+        df = weather.join(prices, how="left")
+
+        return df
 
     def predict(self, date_to_predict: pd.Timestamp | None = None):
-        if date_to_predict is None:
-            date_to_predict = pd.Timestamp.now().floor("h").tz_localize("UTC")
-        else:
-            date_to_predict = pd.Timestamp(date_to_predict).tz_localize("UTC")
 
         self._ensure_dirs()
         logger.info("Predicting for %s", date_to_predict)
