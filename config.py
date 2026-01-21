@@ -3,7 +3,7 @@ import logging
 import sys
 
 # training
-TRAINING_LOOKBACK_DAYS = 60  # 365
+TRAINING_LOOKBACK_DAYS = 365
 MAX_ENCODER_LENGTH = 168
 MAX_PREDICTION_LENGTH = 24
 
@@ -13,7 +13,7 @@ DEFAULT_FORECAST_HOURS = 24
 
 # TFT
 BATCH_SIZE = 64
-MAX_EPOCHS = 5  # 30
+MAX_EPOCHS = 10  # 30
 
 # paths
 PROJECT_ROOT = Path(__file__).resolve().parents[1]  # /price_forecast
@@ -21,23 +21,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]  # /price_forecast
 LOG_DIR = PROJECT_ROOT / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 AUTOMATIC_DIR = PROJECT_ROOT / "automatic"
-# OUTPUT_DIR = PROJECT_ROOT / "output"
-# AUTOMATIC_DIR = OUTPUT_DIR / "automatic"
-# FIG_DIR = OUTPUT_DIR / "figures"
-
-# for p in [LOG_DIR, OUTPUT_DIR, AUTOMATIC_DIR, FIG_DIR]:
-#     p.mkdir(parents=True, exist_ok=True)
-
-# Set-up logs
-# logging.basicConfig(
-#     level=logging.INFO,
-#     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-#     handlers=[
-#         logging.FileHandler(LOG_DIR / "app.log"),
-#         logging.StreamHandler(),  # still prints to console
-#     ],
 
 
+### Logs ================================================
 def setup_logging(log_level=logging.INFO, log_dir=LOG_DIR):
     logging.basicConfig(
         level=logging.INFO,

@@ -19,9 +19,10 @@ from pytorch_forecasting.metrics import QuantileLoss
 from forecasting.data.era5 import load_era5
 from forecasting.data.entsoe import load_prices
 from forecasting.data.open_meteo import load_forecast
-from forecasting.model.dataset import build_dataset
-from forecasting.features.build_features import add_features
 from forecasting.data import io
+from forecasting.features.build_features import add_features
+from forecasting.model.dataset import build_dataset
+from forecasting.model.registry import get_runtime_args
 from price_forecast.config import (
     AUTOMATIC_DIR,
     BATCH_SIZE,
@@ -31,6 +32,12 @@ from price_forecast.config import (
     DEFAULT_HISTORY_HOURS,
     DEFAULT_FORECAST_HOURS,
 )
+
+
+args = get_runtime_args()
+
+max_epochs = args.max_epochs or MAX_EPOCHS
+batch_size = args.batch_size or BATCH_SIZE
 
 import logging
 
@@ -116,7 +123,8 @@ class TFTPriceModel:
         trainer = Trainer(
             accelerator="gpu" if torch.cuda.is_available() else "cpu",
             devices=1,
-            max_epochs=MAX_EPOCHS,
+            max_epochs=max_epochs,
+            batch_size=batch_size,
         )
 
         trainer.fit(self.model, train_dl, val_dataloader)
