@@ -310,7 +310,7 @@ class TFTPriceModel:
         # index values for the prediction period
         df_predict = pd.DataFrame(
             {
-                "time_idx": np.arange(len(preds)),
+                "time_idx": np.arange(preds.shape[1]),
                 "p10": preds[0, :, 0].cpu().numpy().flatten(),
                 "p50": preds[0, :, 1].cpu().numpy().flatten(),
                 "p90": preds[0, :, 2].cpu().numpy().flatten(),
