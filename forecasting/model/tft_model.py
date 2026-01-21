@@ -277,6 +277,7 @@ class TFTPriceModel:
         df = self._load_forecast_data(date_to_predict)
         # Only get the forecasting window and past data for encoder length
         total_len = MAX_ENCODER_LENGTH + MAX_PREDICTION_LENGTH
+        print(f"total_len of prediction: {total_len}")
 
         df = df.iloc[-total_len:]
         df = self._add_features(df)
@@ -310,9 +311,7 @@ class TFTPriceModel:
         df_predict = pd.DataFrame(
             {
                 "timestamp": df.index.values,
-                "entsoe": df["price_eur_per_mwh"].iloc[
-                    -total_len:-DEFAULT_FORECAST_HOURS
-                ],
+                "entsoe": df["price_eur_per_mwh"],
                 "p10": preds[0, :, 0].cpu().numpy().flatten(),
                 "p50": preds[0, :, 1].cpu().numpy().flatten(),
                 "p90": preds[0, :, 2].cpu().numpy().flatten(),
