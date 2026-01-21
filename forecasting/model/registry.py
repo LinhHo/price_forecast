@@ -1,4 +1,4 @@
-from model.tft_model import TFTPriceModel
+from forecasting.model.tft_model import TFTPriceModel
 
 _MODEL_CACHE = {}
 import logging
