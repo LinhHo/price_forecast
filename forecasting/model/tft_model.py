@@ -220,27 +220,42 @@ class TFTPriceModel:
         logger.info("Model saved for zone=%s", self.zone)
 
     ### Predict ==========================================
+    # @classmethod
+    # def load(cls, zone: str, run_id: str):
+    #     """Loads a specific run for prediction"""
+    #     # path: /automatic/ZONE/runs/RUN_ID
+    #     run_path = AUTOMATIC_DIR / zone / "runs" / run_id
+
+    #     instance = cls(zone, run_id=run_id)
+    #     instance.training_dataset = io.load_TimeSeriesDataSet(
+    #         run_path / "data" / "training_dataset.pt"
+    #     )
+
+    #     meta = io.load_json(run_path / "meta.json")
+    #     instance.last_time_idx = meta["last_time_idx"]
+
+    #     # Load weights into the architecture
+    #     instance.model = TemporalFusionTransformer.load_from_checkpoint(
+    #         run_path / "model" / "tft.ckpt"
+    #     )
+
+    #     logger.info("Model loaded from %s", run_path)
+    #     return instance
+
     @classmethod
     def load(cls, zone: str, run_id: str):
-        """Loads a specific run for prediction"""
-        # path: /automatic/ZONE/runs/RUN_ID
-        run_path = AUTOMATIC_DIR / zone / "runs" / run_id
+        base = AUTOMATIC_DIR / zone / "runs" / run_id
+        model = cls(zone)
 
-        instance = cls(zone, run_id=run_id)
-        instance.training_dataset = io.load_TimeSeriesDataSet(
-            run_path / "data" / "training_dataset.pt"
+        model.training_dataset = torch.load(base / "training_dataset.pt")
+        meta = json.load(open(base / "meta.json"))
+
+        model.last_time_idx = meta["last_time_idx"]
+
+        model.model = TemporalFusionTransformer.load_from_checkpoint(
+            base / "model" / "tft.ckpt"
         )
-
-        meta = io.load_json(run_path / "meta.json")
-        instance.last_time_idx = meta["last_time_idx"]
-
-        # Load weights into the architecture
-        instance.model = TemporalFusionTransformer.load_from_checkpoint(
-            run_path / "model" / "tft.ckpt"
-        )
-
-        logger.info("Model loaded from %s", run_path)
-        return instance
+        return model
 
     def _resolve_forecast_window(
         self,
