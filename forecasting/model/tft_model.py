@@ -316,7 +316,7 @@ class TFTPriceModel:
 
         df = weather.join(prices, how="left")
 
-        return df
+        return df, forecast_start
 
     def predict(self, date_to_predict: pd.Timestamp | None = None):
         (self.run_dir / "predict").mkdir(parents=True, exist_ok=True)
@@ -325,7 +325,7 @@ class TFTPriceModel:
         self._ensure_dirs()
         logger.info("Predicting for %s", date_to_predict)
 
-        df = self._load_forecast_data(date_to_predict)
+        df, forecast_start = self._load_forecast_data(date_to_predict)
         # Only get the forecasting window and past data for encoder length
         total_len = MAX_ENCODER_LENGTH + MAX_PREDICTION_LENGTH
         print(f"total_len of prediction: {total_len}")
@@ -413,7 +413,7 @@ class TFTPriceModel:
         plt.savefig(
             self.run_dir
             / "figures"
-            / f"prediction_{date_to_predict.strftime('%Y%m%d_%H')}.jpeg"
+            / f"prediction_{forecast_start.strftime('%Y%m%d_%H')}.jpeg"
         )
         plt.close()
 
