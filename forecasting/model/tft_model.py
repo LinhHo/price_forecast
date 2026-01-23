@@ -293,6 +293,8 @@ class TFTPriceModel:
         return df
 
     def predict(self, date_to_predict: pd.Timestamp | None = None):
+        (self.run_dir / "predict").mkdir(parents=True, exist_ok=True)
+        # (self.run_dir / "figures").mkdir(parents=True, exist_ok=True)
 
         self._ensure_dirs()
         logger.info("Predicting for %s", date_to_predict)
@@ -372,7 +374,7 @@ class TFTPriceModel:
             toplot.index, toplot["p90"], toplot["p10"], alpha=0.3, facecolor="orange"
         )
         plt.plot(
-            toplot["timestamp"],
+            toplot.index,
             toplot["p50"],
             color="darkorange",
             linewidth=2,

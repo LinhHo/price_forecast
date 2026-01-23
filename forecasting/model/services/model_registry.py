@@ -1,7 +1,7 @@
 from pathlib import Path
 from forecasting.model.tft_model import TFTPriceModel
 from infra.s3 import download_zone
-from price_forecast.config import AUTOMATIC_DIR
+from config import AUTOMATIC_DIR
 
 _MODEL_CACHE: dict[str, TFTPriceModel] = {}
 

@@ -1,10 +1,18 @@
 from fastapi import FastAPI
-from price_forecast.api.authentication import router
+from api.routes import train, predict
+
+# from api.authentication import router
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
 
 app = FastAPI(title="Electricity Price Forecast API")
-app.include_router(router)
-
-app = FastAPI()
+# app.include_router(router)
 
 
 @app.get("/")
@@ -17,15 +25,6 @@ def health():
     return {"status": "healthy"}
 
 
-from fastapi import FastAPI
-from api.routes import train, predict
-
-app = FastAPI(title="Price Forecast API")
-
 app.include_router(train.router, prefix="/train")
 app.include_router(predict.router, prefix="/predict")
 
-
-@app.get("/")
-def root():
-    return {"status": "running"}
