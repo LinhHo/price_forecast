@@ -323,12 +323,12 @@ class TFTPriceModel:
         # (self.run_dir / "figures").mkdir(parents=True, exist_ok=True)
 
         self._ensure_dirs()
-        logger.info("Predicting for %s", date_to_predict)
 
         df, forecast_start = self._load_forecast_data(date_to_predict)
         # Only get the forecasting window and past data for encoder length
         total_len = MAX_ENCODER_LENGTH + MAX_PREDICTION_LENGTH
         print(f"total_len of prediction: {total_len}")
+        logger.info("Predicting for %s", forecast_start)
 
         df = df.iloc[-total_len:]
         df = self._add_features(df)
@@ -371,7 +371,7 @@ class TFTPriceModel:
         out_path = (
             self.run_dir
             / "predict"
-            / f"pred_{date_to_predict.strftime('%Y%m%d_%H')}.csv"
+            / f"pred_{forecast_start.strftime('%Y%m%d_%H')}.csv"
         )
         df_predict.to_csv(out_path, index=False)
 
