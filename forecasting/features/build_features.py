@@ -32,6 +32,9 @@ def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
     df["month_sin"] = np.sin(2 * np.pi * (df["month"] - 1) / 12)
     df["month_cos"] = np.cos(2 * np.pi * (df["month"] - 1) / 12)
 
+    for var in ["hour_of_day", "day_of_week", "day_of_month", "day_of_year", "month"]:
+        df[var] = df[var].astype(str)
+
     return df
 
 
@@ -59,8 +62,9 @@ def add_features(df: pd.DataFrame, zone: str) -> pd.DataFrame:
 
     # mark non-missing target for training
     if "price_eur_per_mwh" in df.columns:
-        df["price_is_missing"] = df["price_eur_per_mwh"].isna().astype(int)
+        # df["price_is_missing"] = df["price_eur_per_mwh"].isna().astype(int)
+        df["price_is_missing"] = str(df["price_eur_per_mwh"].isna())
     else:
-        df["price_is_missing"] = 1
+        df["price_is_missing"] = "True"  # 1
 
     return df

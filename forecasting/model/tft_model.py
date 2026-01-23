@@ -337,9 +337,9 @@ class TFTPriceModel:
         df["time_idx"] = np.arange(len(df)) + (self.last_time_idx + 1)
 
         # TFT requirement: handle target column even in predict
-        df["price_is_missing"] = df["price_eur_per_mwh"].isna().astype(int)
+        df["price_is_missing"] = str(df["price_eur_per_mwh"].isna())  # .astype(int)
         df["price_eur_per_mwh"] = (
-            df["price_eur_per_mwh"].where(df["price_is_missing"] == 0).ffill()
+            df["price_eur_per_mwh"].where(df["price_is_missing"] == "False").ffill()
         )
 
         # ensure evaluation mode to avoid randomness
@@ -377,7 +377,7 @@ class TFTPriceModel:
 
         # Plot timeseries of past prices and forecast with different colours with range p10-90
         toplot = df.copy()["price_eur_per_mwh"].to_frame()
-        for var in ["p10", 'p50', "p90"]:
+        for var in ["p10", "p50", "p90"]:
             toplot[var] = toplot["price_eur_per_mwh"]
             toplot[var].iloc[-MAX_PREDICTION_LENGTH:] = df_predict[var].values
 
@@ -385,15 +385,15 @@ class TFTPriceModel:
         plt.plot(
             toplot.index,
             toplot["p50"],
-            label='TFT forecast',
-            color='darkorange',
+            label="TFT forecast",
+            color="darkorange",
             linewidth=1.5,
         )
         plt.plot(
             toplot.index,
             toplot["price_eur_per_mwh"],
-            label='ENTSO-E',
-            color='blue',
+            label="ENTSO-E",
+            color="blue",
             linewidth=1.5,
         )
 
