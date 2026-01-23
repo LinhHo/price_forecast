@@ -247,7 +247,7 @@ class TFTPriceModel:
         base = AUTOMATIC_DIR / zone / "runs" / run_id
         model = cls(zone)
 
-        model.training_dataset = torch.load(base / "training_dataset.pt")
+        model.training_dataset = torch.load(base / "data" / "training_dataset.pt")
         meta = json.load(open(base / "meta.json"))
 
         model.last_time_idx = meta["last_time_idx"]
