@@ -8,7 +8,7 @@ def train_and_upload(zone: str):
     model.train(
         start="2023-01-01",
         end="2024-01-01",
-        max_epochs=5, # 30,
+        max_epochs=5,  # 30,
         batch_size=64,
     )
 
@@ -17,7 +17,7 @@ def train_and_upload(zone: str):
 
     artifacts = [
         ("model/tft.ckpt", run_dir / "model" / "tft.ckpt"),
-        ("training_dataset.pt", run_dir / "training_dataset.pt"),
+        ("training_dataset.pt", run_dir / "data" / "training_dataset.pt"),
         ("meta.json", run_dir / "meta.json"),
     ]
 
@@ -26,6 +26,7 @@ def train_and_upload(zone: str):
         upload_file(local_path=path, s3_key=s3_key)
 
     print(f"Uploaded run {model.run_id} to S3")
+
 
 # from forecasting.model.tft_model import TFTPriceModel
 # from infra.s3 import upload_run
