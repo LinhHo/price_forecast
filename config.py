@@ -22,6 +22,10 @@ LOG_DIR = PROJECT_ROOT / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 AUTOMATIC_DIR = PROJECT_ROOT / "automatic"
 
+# S3
+S3_BUCKET_NAME = "price-forecast-tft-model"
+S3_REGION = "eu-north-1"
+
 
 ### Logs ================================================
 def setup_logging(log_level=logging.INFO, log_dir=LOG_DIR):
