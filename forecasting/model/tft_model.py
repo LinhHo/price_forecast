@@ -22,8 +22,8 @@ from forecasting.data.open_meteo import load_forecast
 from forecasting.data import io
 from forecasting.features.build_features import add_features
 from forecasting.model.dataset import build_dataset
-from price_forecast.config_runtime import get_runtime_args
-from price_forecast.config import (
+from config_runtime import get_runtime_args
+from config import (
     AUTOMATIC_DIR,
     BATCH_SIZE,
     MAX_EPOCHS,

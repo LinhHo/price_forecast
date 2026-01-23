@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.routes import router
+from price_forecast.api.authentication import router
 
 app = FastAPI(title="Electricity Price Forecast")
 
