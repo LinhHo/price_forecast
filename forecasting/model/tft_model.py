@@ -247,7 +247,18 @@ class TFTPriceModel:
         base = AUTOMATIC_DIR / zone / "runs" / run_id
         model = cls(zone)
 
-        model.training_dataset = torch.load(base / "data" / "training_dataset.pt")
+        try:
+            model.training_dataset = TimeSeriesDataSet.load(
+                base / "data" / "training_dataset.pt"
+            )
+        except Exception as e:
+            logger.error(
+                f"Load pytorch training dataset failed, retrying with torch.load..."
+            )
+            model.training_dataset = torch.load(
+                base / "data" / "training_dataset.pt", weights_only=False
+            )
+
         meta = json.load(open(base / "meta.json"))
 
         model.last_time_idx = meta["last_time_idx"]
