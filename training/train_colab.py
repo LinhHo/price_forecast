@@ -16,13 +16,14 @@
 from forecasting.model.tft_model import TFTPriceModel
 from infra.s3 import upload_dir
 
+
 def train_and_upload(zone: str):
     model = TFTPriceModel(zone)
 
     model.train(
         start="2023-01-01",
         end="2024-01-01",
-        max_epochs=30,
+        max_epochs=5,  # 30,
         batch_size=64,
     )
 
