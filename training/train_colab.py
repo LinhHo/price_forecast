@@ -30,4 +30,4 @@ def train_and_upload(zone: str):
     s3_prefix = f"{zone}/runs/{model.run_id}"
     upload_dir(model.run_dir, s3_prefix)
 
-    print(f"Uploaded to s3://price-forecast-models/{s3_prefix}")
+    print(f"Uploaded to s3://price-forecast-tft-model/{s3_prefix}")
