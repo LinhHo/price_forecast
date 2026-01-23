@@ -14,7 +14,7 @@
 
 
 from forecasting.model.tft_model import TFTPriceModel
-from infra.s3 import upload_dir
+from infra.s3 import upload_file
 
 
 def train_and_upload(zone: str):
@@ -27,7 +27,13 @@ def train_and_upload(zone: str):
         batch_size=64,
     )
 
-    s3_prefix = f"{zone}/runs/{model.run_id}"
-    upload_dir(model.run_dir, s3_prefix)
+    # s3_prefix = f"{zone}/runs/{model.run_id}"
+    # upload_file(model.run_dir, s3_prefix)
+
+    s3_prefix = f"{zone}/runs/{model.run_id}/model/tft.ckpt"
+    upload_file(
+        local_path=model.run_dir / "model" / "tft.ckpt",
+        s3_key=s3_prefix,
+    )
 
     print(f"Uploaded to s3://price-forecast-tft-model/{s3_prefix}")
