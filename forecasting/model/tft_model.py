@@ -377,34 +377,28 @@ class TFTPriceModel:
 
         # Plot timeseries of past prices and forecast with different colours with range p10-90
         toplot = df.copy()["price_eur_per_mwh"].to_frame()
-        toplot["label"] = "ENTSOE price"
-        toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "label"] = "TFT forecast"
-        toplot.loc[toplot.index[-MAX_PREDICTION_LENGTH:], "price_eur_per_mwh"] = (
-            df_predict["p50"].values
-        )
-        for var in ["p10", "p90"]:
+        for var in ["p10", 'p50', "p90"]:
             toplot[var] = toplot["price_eur_per_mwh"]
             toplot[var].iloc[-MAX_PREDICTION_LENGTH:] = df_predict[var].values
 
         plt.figure(figsize=(12, 4))
-        hist_df = toplot.iloc[:-MAX_PREDICTION_LENGTH]
         plt.plot(
-            hist_df.index,
-            hist_df["price_eur_per_mwh"],
-            label="ENTSOE Actual",
-            color="blue",
+            toplot.index,
+            toplot["p50"],
+            label='TFT forecast',
+            color='darkorange',
+            linewidth=1.5,
+        )
+        plt.plot(
+            toplot.index,
+            toplot["price_eur_per_mwh"],
+            label='ENTSO-E',
+            color='blue',
             linewidth=1.5,
         )
 
         plt.fill_between(
             toplot.index, toplot["p90"], toplot["p10"], alpha=0.3, facecolor="orange"
-        )
-        plt.plot(
-            toplot.index,
-            toplot["p50"],
-            color="darkorange",
-            linewidth=2,
-            label="TFT Median Forecast (p50)",
         )
         plt.grid("major")
         plt.ylabel("Price [EUR/MWh]")

@@ -4,6 +4,7 @@ Add time features and static features to the dataframe
 
 # build_features.py
 import pandas as pd
+import numpy as np
 from forecasting.data.holidays import HOLIDAYS
 
 
@@ -14,6 +15,23 @@ def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
     df["day_of_month"] = df.index.day
     df["day_of_year"] = df.index.dayofyear
     df["month"] = df.index.month
+
+    # Hour of Day (Cycle: 24)
+    df["hour_sin"] = np.sin(2 * np.pi * df["hour_of_day"] / 24)
+    df["hour_cos"] = np.cos(2 * np.pi * df["hour_of_day"] / 24)
+
+    # Day of Week (Cycle: 7)
+    df["dow_sin"] = np.sin(2 * np.pi * df["day_of_week"] / 7)
+    df["dow_cos"] = np.cos(2 * np.pi * df["day_of_week"] / 7)
+
+    # Day of Year (Cycle: 365.25 to account for leap years)
+    df["doy_sin"] = np.sin(2 * np.pi * df["day_of_year"] / 365.25)
+    df["doy_cos"] = np.cos(2 * np.pi * df["day_of_week"] / 365.25)
+
+    # Month (Cycle: 12)
+    df["month_sin"] = np.sin(2 * np.pi * (df["month"] - 1) / 12)
+    df["month_cos"] = np.cos(2 * np.pi * (df["month"] - 1) / 12)
+
     return df
 
 
