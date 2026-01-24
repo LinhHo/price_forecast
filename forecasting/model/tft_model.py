@@ -10,7 +10,8 @@ import datetime as dt
 from datetime import timedelta, datetime
 from sklearn.metrics import mean_absolute_error
 import matplotlib.pyplot as plt
-import pathlib
+from pathlib import Path
+
 
 from lightning.pytorch import Trainer
 from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
@@ -52,9 +53,12 @@ class TFTPriceModel:
         self.last_time_idx = None
 
         # 1. Establish the run directory immediately
-        self.run_id = run_id or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.run_dir = AUTOMATIC_DIR / self.zone / "runs" / self.run_id
-        self._dirs_created = False
+        self.run_id: str | None = None
+        self.run_dir: Path | None = None
+
+        # self.run_id = run_id or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # self.run_dir = AUTOMATIC_DIR / self.zone / "runs" / self.run_id
+        # self._dirs_created = False
 
     def _ensure_dirs(self):
         """Creates the directory structure if it doesn't exist yet."""
@@ -83,6 +87,10 @@ class TFTPriceModel:
         max_epochs=max_epochs,
         batch_size=batch_size,
     ):
+        self.run_id = datetime.now().tz_localize("UTC").strftime("%Y-%m-%d_%H-%M-%S")
+        self.run_dir = AUTOMATIC_DIR / self.zone / "runs" / self.run_id
+        self.run_dir.mkdir(parents=True, exist_ok=True)
+
         logger.info("Training model for zone=%s in %s", self.zone, self.run_dir)
         self._ensure_dirs()
 
@@ -220,51 +228,33 @@ class TFTPriceModel:
         logger.info("Model saved for zone=%s", self.zone)
 
     ### Predict ==========================================
-    # @classmethod
-    # def load(cls, zone: str, run_id: str):
-    #     """Loads a specific run for prediction"""
-    #     # path: /automatic/ZONE/runs/RUN_ID
-    #     run_path = AUTOMATIC_DIR / zone / "runs" / run_id
-
-    #     instance = cls(zone, run_id=run_id)
-    #     instance.training_dataset = io.load_TimeSeriesDataSet(
-    #         run_path / "data" / "training_dataset.pt"
-    #     )
-
-    #     meta = io.load_json(run_path / "meta.json")
-    #     instance.last_time_idx = meta["last_time_idx"]
-
-    #     # Load weights into the architecture
-    #     instance.model = TemporalFusionTransformer.load_from_checkpoint(
-    #         run_path / "model" / "tft.ckpt"
-    #     )
-
-    #     logger.info("Model loaded from %s", run_path)
-    #     return instance
 
     @classmethod
     def load(cls, zone: str, run_id: str):
-        base = AUTOMATIC_DIR / zone / "runs" / run_id
+        model.run_id = run_id
+        model.run_dir = AUTOMATIC_DIR / zone / "runs" / run_id
+
+        # base = AUTOMATIC_DIR / zone / "runs" / run_id
         model = cls(zone)
 
         try:
             model.training_dataset = TimeSeriesDataSet.load(
-                base / "data" / "training_dataset.pt"
+                model.run_dir / "data" / "training_dataset.pt"
             )
         except Exception as e:
             logger.error(
                 f"Load pytorch training dataset failed, retrying with torch.load..."
             )
             model.training_dataset = torch.load(
-                base / "data" / "training_dataset.pt", weights_only=False
+                model.run_dir / "data" / "training_dataset.pt", weights_only=False
             )
 
-        meta = json.load(open(base / "meta.json"))
+        meta = json.load(open(model.run_dir / "meta.json"))
 
         model.last_time_idx = meta["last_time_idx"]
 
         model.model = TemporalFusionTransformer.load_from_checkpoint(
-            base / "model" / "tft.ckpt"
+            model.run_dir / "model" / "tft.ckpt"
         )
         return model
 
@@ -319,12 +309,17 @@ class TFTPriceModel:
         return df, forecast_start
 
     def predict(self, date_to_predict: pd.Timestamp | None = None):
-        (self.run_dir / "predict").mkdir(parents=True, exist_ok=True)
-        # (self.run_dir / "figures").mkdir(parents=True, exist_ok=True)
+        # (self.run_dir / "predict").mkdir(parents=True, exist_ok=True)
 
-        self._ensure_dirs()
+        # self._ensure_dirs()
 
         df, forecast_start = self._load_forecast_data(date_to_predict)
+
+        # Save in one folder /predictions, each prediction run with its forecast_id
+        forecast_id = forecast_start.strftime("%Y-%m-%d_%H-%M-%S")
+        pred_dir = self.run_dir / "predictions" / forecast_id
+        pred_dir.mkdir(parents=True, exist_ok=True)
+
         # Only get the forecasting window and past data for encoder length
         total_len = MAX_ENCODER_LENGTH + MAX_PREDICTION_LENGTH
         print(f"total_len of prediction: {total_len}")
@@ -368,12 +363,12 @@ class TFTPriceModel:
             }
         )
 
-        out_path = (
-            self.run_dir
-            / "predict"
-            / f"pred_{forecast_start.strftime('%Y%m%d_%H')}.csv"
-        )
-        df_predict.to_csv(out_path, index=False)
+        # out_path = (
+        #     self.run_dir
+        #     / "predict"
+        #     / f"pred_{forecast_start.strftime('%Y%m%d_%H')}.csv"
+        # )
+        df_predict.to_csv(pred_dir / f"pred_{forecast_id}.csv", index=False)
 
         # Plot timeseries of past prices and forecast with different colours with range p10-90
         toplot = df.copy()["price_eur_per_mwh"].to_frame()
@@ -390,8 +385,8 @@ class TFTPriceModel:
             linewidth=1.5,
         )
         plt.plot(
-            toplot.index,
-            toplot["price_eur_per_mwh"],
+            toplot.index[-MAX_PREDICTION_LENGTH:],
+            toplot["price_eur_per_mwh"][-MAX_PREDICTION_LENGTH:],
             label="ENTSO-E",
             color="blue",
             linewidth=1.5,
@@ -404,12 +399,7 @@ class TFTPriceModel:
         plt.ylabel("Price [EUR/MWh]")
         plt.legend()
 
-        plt.savefig(
-            self.run_dir
-            / "figures"
-            / f"prediction_{forecast_start.strftime('%Y%m%d_%H')}.jpeg"
-        )
+        plt.savefig(pred_dir / f"prediction_{forecast_id}.jpeg")
         plt.close()
 
-        logger.info("Prediction saved to %s", out_path)
-        return df_predict
+        logger.info("Plotting prediction for %s", forecast_start)
