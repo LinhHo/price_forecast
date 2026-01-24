@@ -335,28 +335,41 @@ class TFTPriceModel:
         )  # only need to predict once
 
         with torch.no_grad():
-            raw_preds, *rest = self.model.predict(dl, mode="raw", return_x=True)
+            raw_preds, x, *rest = self.model.predict(dl, mode="raw", return_x=True)
 
-        preds = raw_preds["prediction"]
-
-        # Extract timestamps from the decoder window
-        # index values for the prediction period
+        times = x["decoder_time_idx"][0]
+        preds = raw_preds["prediction"][0]  # (H, 3)
+        # Save results for web FastAPI
         df_predict = pd.DataFrame(
             {
-                "time_idx": np.arange(preds.shape[1]),
-                "p10": preds[0, :, 0].cpu().numpy().flatten(),
-                "p50": preds[0, :, 1].cpu().numpy().flatten(),
-                "p90": preds[0, :, 2].cpu().numpy().flatten(),
+                "time_idx": times.cpu().numpy(),
+                "p10": preds[:, 0].cpu().numpy(),
+                "p50": preds[:, 1].cpu().numpy(),
+                "p90": preds[:, 2].cpu().numpy(),
             }
         )
-
-        df_predict.to_csv(pred_dir / f"pred_{forecast_id}.csv", index=False)
+        io.save_json(
+            df_predict,
+            pred_dir / f"pred_{forecast_id}.json",
+        )
 
         # Plot timeseries of past prices and forecast with different colours with range p10-90
+        # Save dataframe of prediction
+        # df_predict = pd.DataFrame(
+        #     {
+        #         "time_idx": np.arange(preds.shape[1]),
+        #         "p10": preds[ :, 0].cpu().numpy().flatten(),
+        #         "p50": preds[ :, 1].cpu().numpy().flatten(),
+        #         "p90": preds[ :, 2].cpu().numpy().flatten(),
+        #     }
+        # )
+
+        # df_predict.to_csv(pred_dir / f"pred_{forecast_id}.csv", index=False)
+
         toplot = df.copy()["price_eur_per_mwh"].to_frame()
         for var in ["p10", "p50", "p90"]:
             toplot[var] = toplot["price_eur_per_mwh"]
-            toplot[var].iloc[-MAX_PREDICTION_LENGTH:] = df_predict[var].values
+            toplot[var].iloc[-MAX_PREDICTION_LENGTH:] = df_predict[var].flatten().values
 
         plt.figure(figsize=(12, 4))
         plt.plot(
@@ -385,3 +398,5 @@ class TFTPriceModel:
         plt.close()
 
         logger.info("Plotting prediction for %s", forecast_start)
+
+        return df_predict.to_dict(orient="records")
