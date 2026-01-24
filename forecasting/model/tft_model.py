@@ -237,11 +237,11 @@ class TFTPriceModel:
 
     @classmethod
     def load(cls, zone: str, run_id: str):
+        model = cls(zone)
         model.run_id = run_id
         model.run_dir = AUTOMATIC_DIR / zone / "runs" / run_id
 
         # base = AUTOMATIC_DIR / zone / "runs" / run_id
-        model = cls(zone)
 
         try:
             model.training_dataset = TimeSeriesDataSet.load(
