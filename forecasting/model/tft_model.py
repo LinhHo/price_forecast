@@ -391,8 +391,8 @@ class TFTPriceModel:
             linewidth=1.5,
         )
         plt.plot(
-            toplot.index[-MAX_PREDICTION_LENGTH:],
-            toplot["price_eur_per_mwh"][-MAX_PREDICTION_LENGTH:],
+            toplot.index[:-MAX_PREDICTION_LENGTH],
+            toplot["price_eur_per_mwh"].iloc[:-MAX_PREDICTION_LENGTH],
             label="ENTSO-E",
             color="blue",
             linewidth=1.5,
