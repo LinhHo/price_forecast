@@ -56,17 +56,6 @@ class TFTPriceModel:
         self.run_id: str | None = None
         self.run_dir: Path | None = None
 
-        # self.run_id = run_id or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        # self.run_dir = AUTOMATIC_DIR / self.zone / "runs" / self.run_id
-        # self._dirs_created = False
-
-    # def _ensure_dirs(self):
-    #     """Creates the directory structure if it doesn't exist yet."""
-    #     if not self._dirs_created:
-    #         for folder in ["metrics", "figures", "model", "data", "predict"]:
-    #             (self.run_dir / folder).mkdir(parents=True, exist_ok=True)
-    #         self._dirs_created = True
-
     def _add_features(self, df: pd.DataFrame) -> pd.DataFrame:
         if not isinstance(df.index, pd.DatetimeIndex):
             raise ValueError("DataFrame index must be DatetimeIndex")
@@ -92,7 +81,6 @@ class TFTPriceModel:
         self.run_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("Training model for zone=%s in %s", self.zone, self.run_dir)
-        # self._ensure_dirs()
 
         # Convert strings to Timestamps if necessary
         start, end = pd.Timestamp(start), pd.Timestamp(end)
@@ -144,7 +132,6 @@ class TFTPriceModel:
         self._save(trainer, self.training_dataset, val_dataloader)
 
     def _save(self, trainer: Trainer, training: TimeSeriesDataSet, val_dataloader):
-        # self._ensure_dirs()
 
         # Save model & Dataset
         io.save_checkpoint(trainer, self.run_dir / "model" / "tft.ckpt")
@@ -241,8 +228,6 @@ class TFTPriceModel:
         model.run_id = run_id
         model.run_dir = AUTOMATIC_DIR / zone / "runs" / run_id
 
-        # base = AUTOMATIC_DIR / zone / "runs" / run_id
-
         try:
             model.training_dataset = TimeSeriesDataSet.load(
                 model.run_dir / "data" / "training_dataset.pt"
@@ -315,10 +300,6 @@ class TFTPriceModel:
         return df, forecast_start
 
     def predict(self, date_to_predict: pd.Timestamp | None = None):
-        # (self.run_dir / "predict").mkdir(parents=True, exist_ok=True)
-
-        # self._ensure_dirs()
-
         df, forecast_start = self._load_forecast_data(date_to_predict)
 
         # Save in one folder /predictions, each prediction run with its forecast_id
@@ -369,11 +350,6 @@ class TFTPriceModel:
             }
         )
 
-        # out_path = (
-        #     self.run_dir
-        #     / "predict"
-        #     / f"pred_{forecast_start.strftime('%Y%m%d_%H')}.csv"
-        # )
         df_predict.to_csv(pred_dir / f"pred_{forecast_id}.csv", index=False)
 
         # Plot timeseries of past prices and forecast with different colours with range p10-90
