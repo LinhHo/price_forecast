@@ -201,15 +201,18 @@ class TFTPriceModel:
             mae / 50 * 100,
         )
 
-        # Visuals
+        # Plotting
+        figs_dir = self.run_dir / "figures"
+        figs_dir.mkdir(parents=True, exist_ok=True)
+
         plt.figure(figsize=(10, 4))
         plt.plot(y_true[:200], label="Actual")
         plt.plot(y_pred[:200], label="Predicted")
         plt.title(
-            f"Validation performance MAE {mae:.3f}, within {mae / y_min * 100:.2f}--{mae / y_max * 100:.2f}% of the range \n and RMSE {rmse:.3f}"
+            f"Validation performance MAE {mae:.3f}, about {mae / y_max * 100:.2f}% of the peak value \n and RMSE {rmse:.3f}"
         )
         plt.legend()
-        plt.savefig(self.run_dir / "figures" / "validation_timeseries.png")
+        plt.savefig(figs_dir / "validation_timeseries.png")
         plt.close()
 
         # Plot and save interpretation of the TFT model
@@ -222,7 +225,7 @@ class TFTPriceModel:
 
         for name, fig in figs.items():
             fig.savefig(
-                self.run_dir / "figures" / f"tft_interpretation_{name}.png",
+                figs_dir / f"tft_interpretation_{name}.png",
                 dpi=200,
                 bbox_inches="tight",
             )
