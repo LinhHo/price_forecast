@@ -87,7 +87,7 @@ class TFTPriceModel:
         max_epochs=max_epochs,
         batch_size=batch_size,
     ):
-        self.run_id = datetime.now().tz_localize("UTC").strftime("%Y-%m-%d_%H-%M-%S")
+        self.run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.run_dir = AUTOMATIC_DIR / self.zone / "runs" / self.run_id
         self.run_dir.mkdir(parents=True, exist_ok=True)
 
