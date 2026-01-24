@@ -1,14 +1,7 @@
 from fastapi import FastAPI
 from api.routes import train, predict
-
-# from api.authentication import router
-
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
+from config import setup_logging
+setup_logging()
 
 
 app = FastAPI(title="Electricity Price Forecast API")

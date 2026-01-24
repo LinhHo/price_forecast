@@ -205,6 +205,9 @@ class TFTPriceModel:
         plt.figure(figsize=(10, 4))
         plt.plot(y_true[:200], label="Actual")
         plt.plot(y_pred[:200], label="Predicted")
+        plt.title(
+            f"Validation performance MAE {mae:.3f}, within {mae / y_min * 100:.2f}--{mae / y_max * 100:.2f}% of the range \n and RMSE {rmse:.3f}"
+        )
         plt.legend()
         plt.savefig(self.run_dir / "figures" / "validation_timeseries.png")
         plt.close()

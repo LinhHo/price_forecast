@@ -30,45 +30,33 @@ ENABLE_ADMIN_AUTH = False
 
 ### Logs ================================================
 def setup_logging(log_level=logging.INFO, log_dir=LOG_DIR):
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler(LOG_DIR / "app.log"),
-            logging.StreamHandler(sys.stdout),  # Forces output to Colab cell
-        ],
-    )
-    logger = logging.getLogger()
-    logger.setLevel(log_level)
-
-    # Project root (forecasting/ is inside repo)
-    app_log = log_dir / "app.log"
-    error_log = log_dir / "error.log"
-
-    # Root logger
-    logger = logging.getLogger()
-    logger.setLevel(log_level)
-    logger.handlers.clear()  # avoid duplicate logs
+    log_dir.mkdir(parents=True, exist_ok=True)
 
     formatter = logging.Formatter(
         "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
     )
 
-    # ---- Console handler ----
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(formatter)
+    root = logging.getLogger()
+    root.setLevel(log_level)
 
-    # ---- App log file ----
-    app_handler = logging.FileHandler(app_log)
-    app_handler.setLevel(logging.INFO)
+    # Clear existing handlers
+    root.handlers.clear()
+
+    # ---- Console (Colab / FastAPI) ----
+    console = logging.StreamHandler(sys.stdout)
+    console.setFormatter(formatter)
+    console.setLevel(log_level)
+
+    # ---- App log ----
+    app_handler = logging.FileHandler(log_dir / "app.log")
     app_handler.setFormatter(formatter)
+    app_handler.setLevel(logging.INFO)
 
-    # ---- Error log file ----
-    error_handler = logging.FileHandler(error_log)
-    error_handler.setLevel(logging.WARNING)
+    # ---- Error log ----
+    error_handler = logging.FileHandler(log_dir / "error.log")
     error_handler.setFormatter(formatter)
+    error_handler.setLevel(logging.WARNING)
 
-    logger.addHandler(console_handler)
-    logger.addHandler(app_handler)
-    logger.addHandler(error_handler)
+    root.addHandler(console)
+    root.addHandler(app_handler)
+    root.addHandler(error_handler)
