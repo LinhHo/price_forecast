@@ -60,12 +60,12 @@ class TFTPriceModel:
         # self.run_dir = AUTOMATIC_DIR / self.zone / "runs" / self.run_id
         # self._dirs_created = False
 
-    def _ensure_dirs(self):
-        """Creates the directory structure if it doesn't exist yet."""
-        if not self._dirs_created:
-            for folder in ["metrics", "figures", "model", "data", "predict"]:
-                (self.run_dir / folder).mkdir(parents=True, exist_ok=True)
-            self._dirs_created = True
+    # def _ensure_dirs(self):
+    #     """Creates the directory structure if it doesn't exist yet."""
+    #     if not self._dirs_created:
+    #         for folder in ["metrics", "figures", "model", "data", "predict"]:
+    #             (self.run_dir / folder).mkdir(parents=True, exist_ok=True)
+    #         self._dirs_created = True
 
     def _add_features(self, df: pd.DataFrame) -> pd.DataFrame:
         if not isinstance(df.index, pd.DatetimeIndex):
@@ -92,7 +92,7 @@ class TFTPriceModel:
         self.run_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("Training model for zone=%s in %s", self.zone, self.run_dir)
-        self._ensure_dirs()
+        # self._ensure_dirs()
 
         # Convert strings to Timestamps if necessary
         start, end = pd.Timestamp(start), pd.Timestamp(end)
@@ -144,7 +144,7 @@ class TFTPriceModel:
         self._save(trainer, self.training_dataset, val_dataloader)
 
     def _save(self, trainer: Trainer, training: TimeSeriesDataSet, val_dataloader):
-        self._ensure_dirs()
+        # self._ensure_dirs()
 
         # Save model & Dataset
         io.save_checkpoint(trainer, self.run_dir / "model" / "tft.ckpt")
