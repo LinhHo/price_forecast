@@ -28,6 +28,8 @@ def build_dataset(df, max_encoder_length, max_prediction_length):
             "doy_cos",
             "month_sin",
             "month_cos",
+            "day_of_month",
+            "price_is_missing",
         ],
         time_varying_unknown_reals=[TARGET],
         time_varying_known_categoricals=[
@@ -35,9 +37,7 @@ def build_dataset(df, max_encoder_length, max_prediction_length):
             "hour_of_day",
             "day_of_year",
             "day_of_week",
-            "day_of_month",
             "month",
-            "price_is_missing",
         ],
         target_normalizer=GroupNormalizer(
             groups=["zone"],

@@ -337,9 +337,9 @@ class TFTPriceModel:
         df["time_idx"] = np.arange(len(df)) + (self.last_time_idx + 1)
 
         # TFT requirement: handle target column even in predict
-        df["price_is_missing"] = str(df["price_eur_per_mwh"].isna())  # .astype(int)
+        df["price_is_missing"] = df["price_eur_per_mwh"].isna().astype(int)
         df["price_eur_per_mwh"] = (
-            df["price_eur_per_mwh"].where(df["price_is_missing"] == "False").ffill()
+            df["price_eur_per_mwh"].where(df["price_is_missing"] == 0).ffill()
         )
 
         # ensure evaluation mode to avoid randomness
