@@ -29,6 +29,8 @@ def build_dataset(df, max_encoder_length, max_prediction_length):
             "month_sin",
             "month_cos",
             "day_of_month",
+            "price_7d_mean",
+            "price_7d_std",
             "price_is_missing",
         ],
         time_varying_unknown_reals=[TARGET],
@@ -41,7 +43,7 @@ def build_dataset(df, max_encoder_length, max_prediction_length):
         ],
         target_normalizer=GroupNormalizer(
             groups=["zone"],
-            transformation=None,
+            transformation="log",  # electricity price is heavy-tail, default: None,
         ),
         add_relative_time_idx=True,
         add_target_scales=False,

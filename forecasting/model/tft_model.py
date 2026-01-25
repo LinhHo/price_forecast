@@ -320,9 +320,11 @@ class TFTPriceModel:
 
         # TFT requirement: handle target column even in predict
         df["price_is_missing"] = df["price_eur_per_mwh"].isna().astype(int)
-        df["price_eur_per_mwh"] = (
-            df["price_eur_per_mwh"].where(df["price_is_missing"] == 0).ffill()
-        )
+        for col in ["price_eur_per_mwh", "price_7d_mean", "price_7d_std"]:
+            df[col] = df[col].where(df["price_is_missing"] == 0).ffill()
+        # df["price_eur_per_mwh"] = (
+        #     df["price_eur_per_mwh"].where(df["price_is_missing"] == 0).ffill()
+        # )
 
         # ensure evaluation mode to avoid randomness
         self.model.eval()

@@ -61,6 +61,10 @@ def add_features(df: pd.DataFrame, zone: str) -> pd.DataFrame:
     df = add_holiday_feature(df)
     df = add_zone(df, zone)
 
+    # Add recent price stats as known reals
+    df["price_7d_mean"] = df["price_eur_per_mwh"].rolling(168).mean()
+    df["price_7d_std"] = df["price_eur_per_mwh"].rolling(168).std()
+    
     # mark non-missing target for training
     if "price_eur_per_mwh" in df.columns:
         df["price_is_missing"] = df["price_eur_per_mwh"].isna().astype(int)
