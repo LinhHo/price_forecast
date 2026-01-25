@@ -150,5 +150,9 @@ def load_prices(zone: str, start, end) -> pd.DataFrame:
 
     df_price = pd.DataFrame(records).set_index("timestamp").sort_index()
 
+    # # Add recent price stats as known reals
+    # df["price_7d_mean"] = df["price_eur_per_mwh"].rolling(168).mean()
+    # df["price_7d_std"] = df["price_eur_per_mwh"].rolling(168).std()
+
     # to match with ERA5
     return df_price.resample("h").mean()
