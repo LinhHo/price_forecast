@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.routes import train, predict
+from api.routes import train, predict, zones
 from config import setup_logging
 
 setup_logging()
@@ -21,6 +21,12 @@ def health():
 
 app.include_router(train.router, prefix="/train")
 app.include_router(predict.router, prefix="/predict")
+app.include_router(zones.router, prefix="/zones")
+
+# Serve the UI with FastAPI
+from fastapi.staticfiles import StaticFiles
+
+app.mount("/", StaticFiles(directory="web", html=True), name="web")
 
 # Run with
 # uvicorn api.app:app --reload
