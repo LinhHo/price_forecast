@@ -27,15 +27,15 @@ app.include_router(predict.router, prefix="/predict")
 # http://localhost:8000/
 
 
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
-from pathlib import Path
+# from fastapi.staticfiles import StaticFiles
+# from fastapi.responses import HTMLResponse
+# from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+# BASE_DIR = Path(__file__).resolve().parent.parent
 
-app.mount("/static", StaticFiles(directory=BASE_DIR / "web" / "static"), name="static")
+# app.mount("/static", StaticFiles(directory=BASE_DIR / "web" / "static"), name="static")
 
 
-@app.get("/")
-def home():
-    return HTMLResponse((BASE_DIR / "web" / "templates" / "index.html").read_text())
+# @app.get("/")
+# def home():
+#     return HTMLResponse((BASE_DIR / "web" / "templates" / "index.html").read_text())
