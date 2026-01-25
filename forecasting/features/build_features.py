@@ -64,8 +64,8 @@ def add_features(df: pd.DataFrame, zone: str) -> pd.DataFrame:
     # mark non-missing target for training
     if "price_eur_per_mwh" in df.columns:
         df["price_is_missing"] = df["price_eur_per_mwh"].isna().astype(int)
-        df["price_is_missing"] = (
-            df["price_is_missing"].where(df["price_is_missing"] == 0).ffill()
+        df["price_eur_per_mwh"] = (
+            df["price_eur_per_mwh"].where(df["price_is_missing"] == 0).ffill()
         )
     else:
         df["price_is_missing"] = 1
