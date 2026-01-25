@@ -8,6 +8,7 @@ setup_logging()
 
 def train_and_upload(zone: str):
     model = TFTPriceModel(zone)
+    run_dir = model.run_dir
 
     try:
         model.train(
@@ -17,7 +18,7 @@ def train_and_upload(zone: str):
             batch_size=64,
         )
 
-        run_dir = model.run_dir
+        # run_dir = model.run_dir
 
         artifacts = [
             ("model/tft.ckpt", run_dir / "model" / "tft.ckpt"),
@@ -32,7 +33,6 @@ def train_and_upload(zone: str):
         print(f"Uploaded run {model.run_id} to S3")
 
     except Exception as e:
-        run_dir = model.run_dir
         print("Training failed, cleaning up run_dir ", run_dir)
         if run_dir.exists():
             shutil.rmtree(run_dir)
