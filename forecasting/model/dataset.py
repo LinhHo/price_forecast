@@ -43,7 +43,7 @@ def build_dataset(df, max_encoder_length, max_prediction_length):
         ],
         target_normalizer=GroupNormalizer(
             groups=["zone"],
-            transformation="softplus",  # electricity price is heavy-tail, default: None,
+            transformation=None,  # electricity price is heavy-tail, default: None,
         ),
         add_relative_time_idx=True,
         add_target_scales=False,
