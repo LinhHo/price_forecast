@@ -221,7 +221,7 @@ class TFTPriceModel:
             f"Validation performance MAE {mae:.3f}, about {mae / y_max * 100:.2f}% of the peak value \n and RMSE {rmse:.3f}"
         )
         plt.legend()
-        plt.savefig(figs_dir / "validation_timeseries.png")
+        plt.savefig(figs_dir / f"validation_timeseries_{self.zone}_{self.run_id}.png")
         plt.close()
 
         # Plot and save interpretation of the TFT model
@@ -234,7 +234,7 @@ class TFTPriceModel:
 
         for name, fig in figs.items():
             fig.savefig(
-                figs_dir / f"tft_interpretation_{name}.png",
+                figs_dir / f"tft_interpretation_{name}_{self.zone}_{self.run_id}.png",
                 dpi=200,
                 bbox_inches="tight",
             )
@@ -389,7 +389,7 @@ class TFTPriceModel:
         #     }
         # )
 
-        df_predict.to_csv(pred_dir / f"pred_{forecast_id}.csv", index=False)
+        df_predict.to_csv(pred_dir / f"pred_{self.zone}_{forecast_id}.csv", index=False)
 
         toplot = df.copy()["price_eur_per_mwh"].to_frame()
         for var in ["p10", "p50", "p90"]:
@@ -419,7 +419,7 @@ class TFTPriceModel:
         plt.ylabel("Price [EUR/MWh]")
         plt.legend()
 
-        plt.savefig(pred_dir / f"prediction_{forecast_id}.jpeg")
+        plt.savefig(pred_dir / f"prediction_{self.zone}_{forecast_id}.jpeg")
         plt.close()
 
         logger.info("Plotting prediction for %s", forecast_start)
