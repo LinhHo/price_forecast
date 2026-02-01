@@ -9,7 +9,22 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+from fastapi import HTTPException
+import traceback
+
+
 @router.get("/{zone}")
+def predict(zone: str, date_to_predict: datetime | None = None):
+    try:
+        model = get_model(zone)
+        preds = model.predict(date_to_predict)
+        return preds
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# @router.get("/{zone}")
 # @router.get("/")
 def predict(zone: str, date_to_predict: datetime):
     logger.info("Predict request received: zone=%s date=%s", zone, date_to_predict)

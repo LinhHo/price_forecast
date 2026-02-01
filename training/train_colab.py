@@ -34,7 +34,7 @@ def train_and_upload(
 
     artifacts = [
         ("model/tft.ckpt", run_dir / "model" / "tft.ckpt"),
-        ("training_dataset.pt", run_dir / "data" / "training_dataset.pt"),
+        ("training_dataset.pt", run_dir / "training_dataset.pt"),
         ("meta.json", run_dir / "meta.json"),
     ]
 

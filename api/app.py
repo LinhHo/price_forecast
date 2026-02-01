@@ -28,6 +28,20 @@ from fastapi.staticfiles import StaticFiles
 
 app.mount("/", StaticFiles(directory="web", html=True), name="web")
 
+
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # <-- MUST be before os.getenv
+
+ENTSOE_TOKEN = os.getenv("ENTSOE_TOKEN")
+ERA5_TOKEN = os.getenv("ERA5_TOKEN")
+
+if not ENTSOE_TOKEN:
+    raise RuntimeError("ENTSOE_TOKEN not set")
+
+if not ERA5_TOKEN:
+    raise RuntimeError("ERA5_TOKEN not set")
 # Run with
 # uvicorn api.app:app --reload
 # http://localhost:8000/

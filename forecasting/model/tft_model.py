@@ -157,9 +157,7 @@ class TFTPriceModel:
 
         # Save model & Dataset
         io.save_checkpoint(trainer, self.run_dir / "model" / "tft.ckpt")
-        io.save_TimeSeriesDataSet(
-            training, self.run_dir / "data" / "training_dataset.pt"
-        )
+        io.save_TimeSeriesDataSet(training, self.run_dir / "training_dataset.pt")
 
         io.save_json(
             {"zone": self.zone, "last_time_idx": int(self.last_time_idx)},
@@ -243,33 +241,63 @@ class TFTPriceModel:
         logger.info("Model saved for zone=%s", self.zone)
 
     ### Predict ==========================================
-
     @classmethod
-    def load(cls, zone: str, run_id: str):
+    def load(cls, zone: str, run_id: str, base_dir: Path | None = None):
         model = cls(zone)
+
+        base = base_dir or (AUTOMATIC_DIR / zone / "runs" / run_id)
+
         model.run_id = run_id
-        model.run_dir = AUTOMATIC_DIR / zone / "runs" / run_id
+        model.run_dir = base
 
         try:
             model.training_dataset = TimeSeriesDataSet.load(
-                model.run_dir / "data" / "training_dataset.pt"
+                base / "training_dataset.pt"
             )
         except Exception as e:
             logger.error(
                 f"Load pytorch training dataset failed, retrying with torch.load..."
             )
             model.training_dataset = torch.load(
-                model.run_dir / "data" / "training_dataset.pt", weights_only=False
+                base / "training_dataset.pt", weights_only=False
             )
 
-        meta = json.load(open(model.run_dir / "meta.json"))
+        # model.training_dataset = torch.load(base / "data" / "training_dataset.pt")
+        meta = json.load(open(base / "meta.json"))
 
         model.last_time_idx = meta["last_time_idx"]
 
         model.model = TemporalFusionTransformer.load_from_checkpoint(
-            model.run_dir / "model" / "tft.ckpt"
+            base / "model" / "tft.ckpt"
         )
         return model
+
+    # @classmethod
+    # def load(cls, zone: str, run_id: str):
+    #     model = cls(zone)
+    #     model.run_id = run_id
+    #     model.run_dir = AUTOMATIC_DIR / zone / "runs" / run_id
+
+    #     try:
+    #         model.training_dataset = TimeSeriesDataSet.load(
+    #             model.run_dir / "data" / "training_dataset.pt"
+    #         )
+    #     except Exception as e:
+    #         logger.error(
+    #             f"Load pytorch training dataset failed, retrying with torch.load..."
+    #         )
+    #         model.training_dataset = torch.load(
+    #             model.run_dir / "data" / "training_dataset.pt", weights_only=False
+    #         )
+
+    #     meta = json.load(open(model.run_dir / "meta.json"))
+
+    #     model.last_time_idx = meta["last_time_idx"]
+
+    #     model.model = TemporalFusionTransformer.load_from_checkpoint(
+    #         model.run_dir / "model" / "tft.ckpt"
+    #     )
+    #     return model
 
     def _resolve_forecast_window(
         self,

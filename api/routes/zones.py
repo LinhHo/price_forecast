@@ -13,3 +13,4 @@ def list_zones():
         for d in AUTOMATIC_DIR.iterdir()
         if d.is_dir()
     )
+

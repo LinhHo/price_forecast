@@ -30,6 +30,10 @@ S3_BUCKET_NAME = "price-forecast-tft-model"
 S3_REGION = "eu-north-1"
 ENABLE_ADMIN_AUTH = False
 
+# # Local cache directory
+# LOCAL_MODEL_CACHE = Path.home() / ".forecast_models"
+# LOCAL_MODEL_CACHE.mkdir(parents=True, exist_ok=True)
+
 
 ### Logs ================================================
 def setup_logging(log_level=logging.INFO, log_dir=LOG_DIR):
