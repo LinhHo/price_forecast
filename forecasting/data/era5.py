@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 def get_bounds_zone(zone: str):
     # Load the world GeoJSON from electricitymap (app.electricitymaps.com)
     # https://github.com/electricitymaps/electricitymaps-contrib
-    geojson_path = "https://raw.githubusercontent.com/electricitymaps/electricitymaps-contrib/master/web/geo/world.geojson"
+    geojson_path = "https://github.com/electricitymaps/electricitymaps-contrib/blob/c79aeaf2ab7225e47cb0bcbe5b8c934734519f82/geo/world.geojson"
+    # geojson_path = "https://raw.githubusercontent.com/electricitymaps/electricitymaps-contrib/master/web/geo/world.geojson"
     gdf = gpd.read_file(geojson_path)
 
     # bidding zone - check if zoneName or countryKey
