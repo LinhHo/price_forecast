@@ -35,11 +35,6 @@ from config import (
 )
 
 
-args = get_runtime_args()
-
-max_epochs = args.max_epochs or MAX_EPOCHS
-batch_size = args.batch_size or BATCH_SIZE
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -73,9 +68,30 @@ class TFTPriceModel:
         self,
         start: pd.Timestamp,
         end: pd.Timestamp,
-        max_epochs=max_epochs,
-        batch_size=batch_size,
+        max_epochs: int | None = None,
+        batch_size: int | None = None,
     ):
+
+        # parse args if not provided
+        args = get_runtime_args()
+        max_epochs = (
+            max_epochs
+            if max_epochs is not None
+            else args.max_epochs if args.max_epochs is not None else MAX_EPOCHS
+        )
+
+        batch_size = (
+            batch_size
+            if batch_size is not None
+            else args.batch_size if args.batch_size is not None else BATCH_SIZE
+        )
+
+        logger.info(
+            "Training with max_epochs=%s batch_size=%s",
+            max_epochs,
+            batch_size,
+        )
+
         self.run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.run_dir = AUTOMATIC_DIR / self.zone / "runs" / self.run_id
         self.run_dir.mkdir(parents=True, exist_ok=True)
