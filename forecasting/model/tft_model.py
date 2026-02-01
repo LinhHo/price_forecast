@@ -11,6 +11,7 @@ from datetime import timedelta, datetime
 from sklearn.metrics import mean_absolute_error
 import matplotlib.pyplot as plt
 from pathlib import Path
+import plotly.graph_objects as go
 
 
 from lightning.pytorch import Trainer
@@ -419,6 +420,12 @@ class TFTPriceModel:
 
         df_predict.to_csv(pred_dir / f"pred_{self.zone}_{forecast_id}.csv", index=False)
 
+        # ---- Save Figure ----
+        fig = self._plot_predictions(df_predict)
+        png_path = pred_dir / "forecast.png"
+        fig.write_image(png_path)
+
+        # My plot with past prices
         toplot = df.copy()["price_eur_per_mwh"].to_frame()
         for var in ["p10", "p50", "p90"]:
             toplot[var] = toplot["price_eur_per_mwh"]
@@ -453,3 +460,38 @@ class TFTPriceModel:
         logger.info("Plotting prediction for %s", forecast_start)
 
         return df_predict.to_dict(orient="records")
+
+
+    def _plot_predictions(self, df: pd.DataFrame):
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=df["time_idx"],
+            y=df["p50"],
+            name="Median",
+            line=dict(color="blue")
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=df["time_idx"],
+            y=df["p10"],
+            name="P10",
+            line=dict(color="lightblue"),
+            fill=None
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=df["time_idx"],
+            y=df["p90"],
+            name="P90",
+            line=dict(color="lightblue"),
+            fill="tonexty"
+        ))
+
+        fig.update_layout(
+            title=f"Price Forecast – {self.zone}",
+            xaxis_title="Time",
+            yaxis_title="EUR/MWh"
+        )
+
+        return fig

@@ -1,12 +1,19 @@
 from fastapi import FastAPI
 from api.routes import train, predict, zones
-from config import setup_logging
+from config import setup_logging, AUTOMATIC_DIR
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+
+from dotenv import load_dotenv
+import os
+
 
 setup_logging()
 
+# Ensure directory exists BEFORE mounting
+AUTOMATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="Electricity Price Forecast API")
-# app.include_router(router)
 
 
 @app.get("/")
@@ -24,13 +31,19 @@ app.include_router(predict.router, prefix="/predict")
 app.include_router(zones.router, prefix="/zones")
 
 # Serve the UI with FastAPI
-from fastapi.staticfiles import StaticFiles
+# app.mount("/", StaticFiles(directory="web", html=True), name="web")
+# app.mount("/", StaticFiles(directory="api/web", html=True), name="web")
 
-app.mount("/", StaticFiles(directory="web", html=True), name="web")
+WEB_DIR = Path(__file__).parent / "web"
+WEB_DIR.mkdir(exist_ok=True)
+
+app.mount(
+    "/ui",
+    StaticFiles(directory=str(WEB_DIR), html=True),
+    name="ui",
+)
 
 
-from dotenv import load_dotenv
-import os
 
 load_dotenv()  # <-- MUST be before os.getenv
 
@@ -42,6 +55,18 @@ if not ENTSOE_TOKEN:
 
 if not ERA5_TOKEN:
     raise RuntimeError("ERA5_TOKEN not set")
+
+
+app.mount(
+    "/artifacts",
+    StaticFiles(directory=str(AUTOMATIC_DIR)),
+    name="artifacts",
+)
+
+# include dropdown list of zones
+app.include_router(zones.router, prefix="/zones")
+
+
 # Run with
 # uvicorn api.app:app --reload
 # http://localhost:8000/

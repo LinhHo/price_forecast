@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Electricity Price Forecast</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+<body>
+
+    <h2>Price Forecast</h2>
+
+    <label>Zone:</label>
+    <select id="zone"></select>
+
+    <label>Date:</label>
+    <input type="date" id="date">
+
+    <button onclick="runForecast()">Forecast</button>
+
+    <div id="chart"></div>
+
+    <img id="png" width="800">
+
+    <script>
+        async function loadZones() {
+            const res = await fetch("/zones");
+            const zones = await res.json();
+            const select = document.getElementById("zone");
+            zones.forEach(z => {
+                const opt = document.createElement("option");
+                opt.value = z;
+                opt.text = z;
+                select.appendChild(opt);
+            });
+        }
+
+        async function runForecast() {
+            const zone = document.getElementById("zone").value;
+            const date = document.getElementById("date").value;
+
+            const res = await fetch(`/predict/${zone}?date_to_predict=${date}`);
+            const data = await res.json();
+
+            const x = data.data.map(d => d.time_idx);
+            const y = data.data.map(d => d.p50);
+
+            Plotly.newPlot("chart", [{
+                x: x,
+                y: y,
+                mode: "lines",
+                name: "Median"
+            }]);
+
+            document.getElementById("png").src = data.png;
+        }
+
+        loadZones();
+    </script>
+
+</body>
+
+</html>

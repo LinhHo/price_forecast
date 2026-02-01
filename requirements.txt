@@ -1,0 +1,4 @@
+plotly
+boto3
+kaleido
+dotenv
