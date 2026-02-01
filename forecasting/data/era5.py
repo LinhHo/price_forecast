@@ -1,5 +1,5 @@
 # era5.py
-import geopandas as gpd
+# import geopandas as gpd
 import xarray as xr
 import pandas as pd
 import time
@@ -18,19 +18,45 @@ def get_era5_token() -> str:
 logger = logging.getLogger(__name__)
 
 
+# (min_lon, min_lat, max_lon, max_lat)
+ZONE_BOUNDS = {
+    "NL": (3.0, 50.5, 7.5, 53.7),
+    "BE": (2.5, 49.5, 6.5, 51.7),
+    "DE-LU": (5.5, 47.0, 15.5, 55.2),
+    "FR": (-5.5, 41.0, 9.8, 51.5),
+    "ES": (-9.5, 35.5, 3.5, 43.8),
+    "IT-North": (6.0, 44.0, 13.5, 47.5),
+    "IT-South": (12.0, 37.0, 18.5, 42.5),
+    "NO1": (7.5, 58.0, 12.5, 61.5),
+    "SE3": (11.0, 56.5, 18.5, 59.5),
+    "GB": (-7.8, 49.8, 2.2, 59.0),
+}
+
+# from forecasting.data.zones import ZONE_BOUNDS
+
+
 def get_bounds_zone(zone: str):
-    # Load the world GeoJSON from electricitymap (app.electricitymaps.com)
-    # https://github.com/electricitymaps/electricitymaps-contrib
-    geojson_path = "https://github.com/electricitymaps/electricitymaps-contrib/blob/c79aeaf2ab7225e47cb0bcbe5b8c934734519f82/geo/world.geojson"
-    # geojson_path = "https://raw.githubusercontent.com/electricitymaps/electricitymaps-contrib/master/web/geo/world.geojson"
-    gdf = gpd.read_file(geojson_path)
+    try:
+        return ZONE_BOUNDS[zone]
+    except KeyError:
+        raise ValueError(
+            f"Zone '{zone}' not supported. "
+            f"Available zones: {sorted(ZONE_BOUNDS.keys())}"
+        )
 
-    # bidding zone - check if zoneName or countryKey
-    zone_gdf = gdf[gdf["zoneName"] == zone]
-    if zone_gdf.empty:
-        raise ValueError(f"Zone {zone} not found")
 
-    return zone_gdf.total_bounds  # (minx, miny, maxx, maxy)
+# def get_bounds_zone(zone: str):
+#     # Load the world GeoJSON from electricitymap (app.electricitymaps.com)
+#     # https://github.com/electricitymaps/electricitymaps-contrib
+#     geojson_path = "https://raw.githubusercontent.com/electricitymaps/electricitymaps-contrib/master/web/geo/world.geojson"
+#     gdf = gpd.read_file(geojson_path)
+
+#     # bidding zone - check if zoneName or countryKey
+#     zone_gdf = gdf[gdf["zoneName"] == zone]
+#     if zone_gdf.empty:
+#         raise ValueError(f"Zone {zone} not found")
+
+#     return zone_gdf.total_bounds  # (minx, miny, maxx, maxy)
 
 
 def open_era5_zarr(url, retries=3, delay=3):
