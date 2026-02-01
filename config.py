@@ -13,7 +13,7 @@ DEFAULT_FORECAST_HOURS = 24
 
 # TFT
 BATCH_SIZE = 64
-MAX_EPOCHS = 5  # 30
+MAX_EPOCHS = 3  # 30
 
 # paths
 PROJECT_ROOT = Path(__file__).resolve().parents[1]  # /price_forecast

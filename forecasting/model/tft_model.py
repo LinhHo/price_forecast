@@ -350,10 +350,11 @@ class TFTPriceModel:
                 "p90": preds[:, 2].cpu().numpy(),
             }
         )
-        io.save_json(
-            df_predict,
-            pred_dir / f"pred_{forecast_id}.json",
-        )
+        # Predict has to return pd dataframe, only converted to dict json in FastAPI
+        # io.save_json(
+        #     df_predict,
+        #     pred_dir / f"pred_{forecast_id}.json",
+        # )
 
         # Plot timeseries of past prices and forecast with different colours with range p10-90
         # Save dataframe of prediction
@@ -366,7 +367,7 @@ class TFTPriceModel:
         #     }
         # )
 
-        # df_predict.to_csv(pred_dir / f"pred_{forecast_id}.csv", index=False)
+        df_predict.to_csv(pred_dir / f"pred_{forecast_id}.csv", index=False)
 
         toplot = df.copy()["price_eur_per_mwh"].to_frame()
         for var in ["p10", "p50", "p90"]:
