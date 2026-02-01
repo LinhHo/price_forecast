@@ -26,6 +26,8 @@ from forecasting.model.dataset import build_dataset
 from config_runtime import get_runtime_args
 from config import (
     AUTOMATIC_DIR,
+    START_TRAINING,
+    END_TRAINING,
     BATCH_SIZE,
     MAX_EPOCHS,
     MAX_ENCODER_LENGTH,
@@ -85,9 +87,13 @@ class TFTPriceModel:
             if batch_size is not None
             else args.batch_size if args.batch_size is not None else BATCH_SIZE
         )
+        start = start if start is not None else pd.Timestamp(START_TRAINING)
+        end = end if end is not None else pd.Timestamp(END_TRAINING)
 
         logger.info(
-            "Training with max_epochs=%s batch_size=%s",
+            "Training start %s end %s with max_epochs=%s batch_size=%s",
+            start,
+            end,
             max_epochs,
             batch_size,
         )

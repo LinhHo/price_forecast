@@ -2,14 +2,31 @@ from forecasting.model.tft_model import TFTPriceModel
 from infra.s3 import upload_file
 
 
-def train_and_upload(zone: str):
+# def train_and_upload(zone: str, start: str, end: str, max_epochs: int = 5, batch_size: int = 64):
+#     model = TFTPriceModel(zone)
+
+#     model.train(
+#         start=start,
+#         end=end,
+#         max_epochs=max_epochs,
+#         batch_size=batch_size,
+#     )
+
+
+def train_and_upload(
+    zone: str,
+    start: str | None = None,
+    end: str | None = None,
+    max_epochs: int | None = None,
+    batch_size: int | None = None,
+):
     model = TFTPriceModel(zone)
 
     model.train(
-        start="2023-01-01",
-        end="2024-01-01",
-        max_epochs=5,  # 30,
-        batch_size=64,
+        start=start,
+        end=end,
+        max_epochs=max_epochs,
+        batch_size=batch_size,
     )
 
     # artifacts
@@ -26,4 +43,3 @@ def train_and_upload(zone: str):
         upload_file(local_path=path, s3_key=s3_key)
 
     print(f"Uploaded run {model.run_id} to S3")
-
