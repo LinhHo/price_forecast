@@ -372,7 +372,7 @@ class TFTPriceModel:
         toplot = df.copy()["price_eur_per_mwh"].to_frame()
         for var in ["p10", "p50", "p90"]:
             toplot[var] = toplot["price_eur_per_mwh"]
-            toplot[var].iloc[-MAX_PREDICTION_LENGTH:] = df_predict[var].flatten().values
+            toplot[var].iloc[-MAX_PREDICTION_LENGTH:] = df_predict[var].values
 
         plt.figure(figsize=(12, 4))
         plt.plot(
