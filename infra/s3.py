@@ -22,3 +22,15 @@ def download_zone(zone: str, local_dir: Path):
 
 def upload_file(local_path: Path, s3_key: str):
     _s3.upload_file(str(local_path), S3_BUCKET_NAME, s3_key)
+
+
+def list_zones() -> list[str]:
+    """List all zone prefixes available in the S3 bucket."""
+    paginator = _s3.get_paginator("list_objects_v2")
+    zones = []
+    for page in paginator.paginate(Bucket=S3_BUCKET_NAME, Prefix="", Delimiter="/"):
+        for prefix_info in page.get("CommonPrefixes", []):
+            zone = prefix_info["Prefix"].rstrip("/")
+            if zone:
+                zones.append(zone)
+    return sorted(zones)

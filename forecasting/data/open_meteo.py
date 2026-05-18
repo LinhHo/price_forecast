@@ -40,8 +40,16 @@ def load_forecast(zone: str, start, end) -> pd.DataFrame:
         f"&end_date={end_day}"
     )
 
+    resp = requests.get(url)
+    resp.raise_for_status()
+    payload = resp.json()
+    if "hourly" not in payload:
+        raise RuntimeError(
+            f"Open-Meteo returned no hourly data for {start_day}→{end_day}: "
+            f"{payload.get('reason', payload)}"
+        )
     df = (
-        pd.DataFrame(requests.get(url).json()["hourly"])
+        pd.DataFrame(payload["hourly"])
         .assign(time=lambda x: pd.to_datetime(x["time"], utc=True))
         .set_index("time")
     )

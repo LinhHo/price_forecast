@@ -1,63 +1,633 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Electricity Price Forecast</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-</head>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f4f8;
+            color: #2d3748;
+            min-height: 100vh;
+        }
+
+        header {
+            background: #1a365d;
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        header .icon { font-size: 1.5rem; }
+        header h1 { font-size: 1.25rem; font-weight: 600; }
+        header .subtitle { font-size: 0.8rem; opacity: 0.7; margin-top: 2px; }
+
+        .layout {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1500px;
+            margin: 0 auto;
+            align-items: flex-start;
+        }
+
+        .sidebar {
+            width: 270px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 18px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .card-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: #718096;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .field { margin-bottom: 12px; }
+        .field:last-child { margin-bottom: 0; }
+
+        .field label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 5px;
+        }
+
+        input[type="date"], select {
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            background: #f7fafc;
+            color: #2d3748;
+            outline: none;
+            transition: border-color 0.15s, background 0.15s;
+            cursor: pointer;
+        }
+        input[type="date"]:focus, select:focus {
+            border-color: #4299e1;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(66,153,225,0.15);
+        }
+
+        .hint {
+            font-size: 0.73rem;
+            color: #a0aec0;
+            margin-top: 5px;
+        }
+
+        .run-btn {
+            width: 100%;
+            padding: 11px;
+            background: #2b6cb0;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, opacity 0.15s;
+            letter-spacing: 0.01em;
+        }
+        .run-btn:hover:not(:disabled) { background: #2c5282; }
+        .run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .main { flex: 1; min-width: 0; }
+
+        .chart-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 14px;
+            gap: 12px;
+        }
+        .chart-header h2 { font-size: 1rem; font-weight: 600; color: #2d3748; }
+
+        .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge-forecast { background: #fff3e0; color: #c05621; }
+        .badge-actual   { background: #e8f5e9; color: #276749; }
+        .badge-era5     { background: #faf5ff; color: #6b46c1; }
+
+        #status {
+            font-size: 0.82rem;
+            padding: 9px 13px;
+            border-radius: 7px;
+            margin-bottom: 14px;
+            display: none;
+        }
+        .status-loading { background: #ebf8ff; color: #2b6cb0; }
+        .status-error   { background: #fff5f5; color: #c53030; }
+        .status-warn    { background: #fffbeb; color: #92400e; }
+        .status-ok      { background: #f0fff4; color: #276749; }
+
+        #chart-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 420px;
+            color: #a0aec0;
+            font-size: 0.9rem;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #chart-placeholder .big-icon { font-size: 3rem; opacity: 0.3; }
+
+        #chart { display: none; }
+
+        .bottom-panels {
+            display: none;          /* shown only when actual data available */
+            flex-direction: row;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .bottom-panel {
+            flex: 1;
+            min-width: 0;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .panel-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #718096;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        @media (max-width: 800px) {
+            .layout { flex-direction: column; }
+            .sidebar { width: 100%; }
+            .bottom-panels { flex-direction: column; }
+        }
+    </style>
+</head>
 <body>
 
-    <h2>Price Forecast</h2>
+<header>
+    <div class="icon">⚡</div>
+    <div>
+        <h1>Electricity Price Forecast</h1>
+        <div class="subtitle">24-hour day-ahead price · Temporal Fusion Transformer</div>
+    </div>
+</header>
 
-    <label>Zone:</label>
-    <select id="zone"></select>
+<div class="layout">
 
-    <label>Date:</label>
-    <input type="date" id="date">
+    <!-- ── Sidebar ─────────────────────────────────── -->
+    <aside class="sidebar">
 
-    <button onclick="runForecast()">Forecast</button>
+        <!-- Forecast window -->
+        <div class="card">
+            <div class="card-title">Forecast Window</div>
 
-    <div id="chart"></div>
+            <div class="field">
+                <label>Date</label>
+                <input type="date" id="date">
+            </div>
 
-    <img id="png" width="800">
+            <div class="field">
+                <label>Start Hour (UTC)</label>
+                <select id="hour"></select>
+                <div class="hint">The model predicts 24 h starting from this hour.</div>
+            </div>
+        </div>
 
-    <script>
-        async function loadZones() {
-            const res = await fetch("/zones");
-            const zones = await res.json();
-            const select = document.getElementById("zone");
-            zones.forEach(z => {
-                const opt = document.createElement("option");
-                opt.value = z;
-                opt.text = z;
-                select.appendChild(opt);
-            });
+        <!-- Model / zone -->
+        <div class="card">
+            <div class="card-title">Model Selection</div>
+
+            <div class="field">
+                <label>Country / Zone</label>
+                <select id="zone"></select>
+                <div class="hint" id="zone-hint">Loading available models from AWS S3…</div>
+            </div>
+        </div>
+
+        <button class="run-btn" id="run-btn" onclick="runForecast()">Run Forecast →</button>
+
+    </aside>
+
+    <!-- ── Main chart ───────────────────────────────── -->
+    <main class="main">
+        <div class="chart-card">
+
+            <div class="chart-header">
+                <div>
+                    <h2 id="chart-title">Configure a forecast and press Run</h2>
+                    <div class="badges" id="badges"></div>
+                </div>
+            </div>
+
+            <div id="status"></div>
+
+            <div id="chart-placeholder">
+                <div class="big-icon">📈</div>
+                <span>Your forecast chart will appear here</span>
+            </div>
+            <div id="chart"></div>
+
+        </div>
+
+        <!-- ── Bottom panels (only when actual prices available) ── -->
+        <div class="bottom-panels" id="bottom-panels">
+
+            <div class="bottom-panel">
+                <div class="panel-title">Error Distribution (P50 − Actual)</div>
+                <div id="dist-chart"></div>
+            </div>
+
+            <div class="bottom-panel">
+                <div class="panel-title">Hourly Error Pattern</div>
+                <div id="polar-chart"></div>
+            </div>
+
+        </div>
+    </main>
+
+</div>
+
+<script>
+/* ── Country label lookup ─────────────────────── */
+const ZONE_LABELS = {
+    AL: "Albania", AT: "Austria", BE: "Belgium", BG: "Bulgaria",
+    CH: "Switzerland", CY: "Cyprus", CZ: "Czech Republic",
+    "DE-AT-LU": "Germany-Austria-Luxembourg", "DE-LU": "Germany-Luxembourg",
+    DK1: "Denmark West", DK2: "Denmark East", EE: "Estonia",
+    ES: "Spain", FI: "Finland", FR: "France", GB: "Great Britain",
+    GR: "Greece", HR: "Croatia", HU: "Hungary", "IE-SEM": "Ireland",
+    "IT-North": "Italy North", "IT-South": "Italy South",
+    LT: "Lithuania", LU: "Luxembourg", LV: "Latvia",
+    ME: "Montenegro", MK: "North Macedonia", NL: "Netherlands",
+    NO1: "Norway East", NO2: "Norway South", NO3: "Norway Central",
+    NO4: "Norway North", NO5: "Norway West",
+    PL: "Poland", PT: "Portugal", RO: "Romania", RS: "Serbia",
+    SE1: "Sweden North", SE2: "Sweden N-Central",
+    SE3: "Sweden S-Central", SE4: "Sweden South",
+    SI: "Slovenia", SK: "Slovakia", TR: "Turkey", "UA-IPS": "Ukraine"
+};
+
+/* ── Init ─────────────────────────────────────── */
+function init() {
+    // Default date = today
+    const today = new Date();
+    document.getElementById("date").value = today.toISOString().slice(0, 10);
+
+    // Hour options
+    const hourSel = document.getElementById("hour");
+    for (let h = 0; h < 24; h++) {
+        const opt = document.createElement("option");
+        opt.value = h;
+        opt.text = `${String(h).padStart(2, "0")}:00 UTC`;
+        hourSel.appendChild(opt);
+    }
+
+    loadZones();
+}
+
+/* ── Load available zones from backend (AWS S3) ── */
+async function loadZones() {
+    const hint = document.getElementById("zone-hint");
+    const sel  = document.getElementById("zone");
+    try {
+        const res   = await fetch("/zones");
+        const zones = await res.json();
+        sel.innerHTML = "";
+        zones.forEach(z => {
+            const opt = document.createElement("option");
+            opt.value = z;
+            opt.text  = ZONE_LABELS[z] ? `${ZONE_LABELS[z]} (${z})` : z;
+            sel.appendChild(opt);
+        });
+        hint.textContent = `${zones.length} model${zones.length !== 1 ? "s" : ""} available`;
+    } catch {
+        hint.textContent = "Could not load zones — check server.";
+    }
+}
+
+/* ── Status helpers ───────────────────────────── */
+function setStatus(msg, type) {
+    const el = document.getElementById("status");
+    if (!msg) { el.style.display = "none"; return; }
+    el.textContent  = msg;
+    el.className    = `status-${type}`;
+    el.style.display = "block";
+}
+
+function setBadges(hasForecast, hasActual, era5Fallback) {
+    const el = document.getElementById("badges");
+    el.innerHTML = "";
+    if (hasForecast)  el.innerHTML += `<span class="badge badge-forecast">▪ Forecast (P10/P50/P90)</span>`;
+    if (hasActual)    el.innerHTML += `<span class="badge badge-actual">▪ Actual (ENTSOE)</span>`;
+    if (era5Fallback) el.innerHTML += `<span class="badge badge-era5">▪ Weather: ERA5 fallback</span>`;
+}
+
+/* ── Run forecast ─────────────────────────────── */
+async function runForecast() {
+    const zone = document.getElementById("zone").value;
+    const date = document.getElementById("date").value;
+    const hour = parseInt(document.getElementById("hour").value);
+
+    if (!zone || !date) {
+        setStatus("Please select a zone and a date.", "error");
+        return;
+    }
+
+    const btn = document.getElementById("run-btn");
+    btn.disabled    = true;
+    btn.textContent = "Running…";
+    setStatus("Fetching forecast…", "loading");
+
+    // Build ISO datetime string for the API
+    const dateTime = `${date}T${String(hour).padStart(2, "0")}:00:00`;
+
+    try {
+        const res = await fetch(`/predict/${zone}?date_to_predict=${dateTime}`);
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `HTTP ${res.status}`);
+        }
+        const payload = await res.json();
+
+        const label = ZONE_LABELS[zone] || zone;
+        document.getElementById("chart-title").textContent =
+            `${label} (${zone}) — 24 h starting ${date} ${String(hour).padStart(2,"0")}:00 UTC`;
+
+        const hasActual = Array.isArray(payload.actual) && payload.actual.length > 0;
+        const era5Fallback = payload.weather_source === "era5-fallback";
+
+        setBadges(true, hasActual, era5Fallback);
+        renderChart(payload.data, payload.actual || []);
+
+        if (hasActual) {
+            renderErrorPanels(payload.data, payload.actual);
+        } else {
+            hideErrorPanels();
         }
 
-        async function runForecast() {
-            const zone = document.getElementById("zone").value;
-            const date = document.getElementById("date").value;
-
-            const res = await fetch(`/predict/${zone}?date_to_predict=${date}`);
-            const data = await res.json();
-
-            const x = data.data.map(d => d.time_idx);
-            const y = data.data.map(d => d.p50);
-
-            Plotly.newPlot("chart", [{
-                x: x,
-                y: y,
-                mode: "lines",
-                name: "Median"
-            }]);
-
-            document.getElementById("png").src = data.png;
+        if (era5Fallback && !hasActual) {
+            setStatus(
+                "⚠ Weather data from ERA5 reanalysis (Open-Meteo unavailable for this date). " +
+                "Forecast quality may differ from near-real-time predictions.",
+                "warn"
+            );
+        } else if (era5Fallback) {
+            setStatus(
+                "⚠ Weather input: ERA5 reanalysis (Open-Meteo unavailable for this date).",
+                "warn"
+            );
+        } else if (!hasActual && payload.actual !== null) {
+            setStatus("Actual ENTSOE prices not available for this zone/date — showing forecast only.", "warn");
+        } else {
+            setStatus(null);
         }
 
-        loadZones();
-    </script>
+    } catch (e) {
+        setStatus(`Error: ${e.message}`, "error");
+    } finally {
+        btn.disabled    = false;
+        btn.textContent = "Run Forecast →";
+    }
+}
+
+/* ── Plotly chart ─────────────────────────────── */
+function renderChart(forecastRows, actualRows) {
+    const fX   = forecastRows.map(d => d.timestamp || d.time_idx);
+    const p10  = forecastRows.map(d => d.p10);
+    const p50  = forecastRows.map(d => d.p50);
+    const p90  = forecastRows.map(d => d.p90);
+
+    const traces = [];
+
+    // Shaded P10–P90 uncertainty band
+    traces.push({
+        x: [...fX, ...fX.slice().reverse()],
+        y: [...p90, ...p10.slice().reverse()],
+        fill: "toself",
+        fillcolor: "rgba(237,137,54,0.18)",
+        line: { color: "transparent" },
+        name: "P10–P90 band",
+        showlegend: true,
+        type: "scatter",
+        hoverinfo: "skip"
+    });
+
+    // P50 forecast line
+    traces.push({
+        x: fX,
+        y: p50,
+        mode: "lines",
+        name: "Forecast P50",
+        line: { color: "rgba(221,107,32,1)", width: 2.5 },
+        type: "scatter"
+    });
+
+    // Actual ENTSOE prices
+    if (actualRows.length > 0) {
+        traces.push({
+            x: actualRows.map(d => d.timestamp),
+            y: actualRows.map(d => d.price),
+            mode: "lines+markers",
+            name: "Actual (ENTSOE)",
+            line: { color: "rgba(49,130,206,1)", width: 2 },
+            marker: { size: 5 },
+            type: "scatter"
+        });
+    }
+
+    const useDateTime = forecastRows.length > 0 && forecastRows[0].timestamp;
+
+    Plotly.react("chart", traces, {
+        xaxis: {
+            title: "Time (UTC)",
+            type: useDateTime ? "date" : "linear",
+            showgrid: true,
+            gridcolor: "#f0f0f0",
+            tickformat: useDateTime ? "%d %b\n%H:%M" : undefined
+        },
+        yaxis: {
+            title: "EUR / MWh",
+            showgrid: true,
+            gridcolor: "#f0f0f0",
+            zeroline: false
+        },
+        legend: { orientation: "h", y: -0.18, x: 0 },
+        margin: { t: 10, l: 60, r: 20, b: 80 },
+        plot_bgcolor: "white",
+        paper_bgcolor: "white",
+        hovermode: "x unified"
+    }, { responsive: true });
+
+    // Show chart, hide placeholder
+    document.getElementById("chart-placeholder").style.display = "none";
+    document.getElementById("chart").style.display = "block";
+}
+
+/* ── Error analysis helpers ───────────────────── */
+
+// Join forecast (p50) with actual by timestamp → [{hour, error}]
+function computeErrors(forecastRows, actualRows) {
+    const actualMap = {};
+    actualRows.forEach(d => { actualMap[d.timestamp] = d.price; });
+
+    return forecastRows
+        .filter(d => d.timestamp && actualMap[d.timestamp] != null && d.p50 != null)
+        .map(d => ({
+            hour:   new Date(d.timestamp).getUTCHours(),
+            label:  `${String(new Date(d.timestamp).getUTCHours()).padStart(2,"0")}:00`,
+            error:  +(d.p50 - actualMap[d.timestamp]).toFixed(2),
+            p50:    d.p50,
+            actual: actualMap[d.timestamp],
+        }));
+}
+
+// Left panel: histogram of errors (orange = over-forecast, blue = under-forecast)
+function renderDistPanel(errors) {
+    const vals = errors.map(e => e.error);
+    const pos  = vals.filter(v => v >= 0);
+    const neg  = vals.filter(v => v  < 0);
+
+    const allAbs = vals.map(Math.abs);
+    const maxAbs = allAbs.length ? Math.max(...allAbs) : 1;
+    const binSize = maxAbs > 0 ? +(maxAbs / 5).toFixed(1) || 1 : 1;
+
+    const traces = [];
+    if (neg.length) traces.push({
+        x: neg, type: "histogram", name: "Under-forecast (P50 < actual)",
+        marker: { color: "rgba(49,130,206,0.75)" },
+        xbins: { size: binSize },
+        autobinx: false,
+    });
+    if (pos.length) traces.push({
+        x: pos, type: "histogram", name: "Over-forecast (P50 > actual)",
+        marker: { color: "rgba(221,107,32,0.75)" },
+        xbins: { size: binSize },
+        autobinx: false,
+    });
+
+    Plotly.react("dist-chart", traces, {
+        barmode: "overlay",
+        xaxis: {
+            title: "Forecast error  (EUR/MWh)",
+            zeroline: true, zerolinecolor: "#718096", zerolinewidth: 1.5,
+            showgrid: true, gridcolor: "#f0f0f0",
+        },
+        yaxis: {
+            title: "Frequency",
+            showgrid: true, gridcolor: "#f0f0f0",
+        },
+        legend: { orientation: "h", y: -0.22, font: { size: 11 } },
+        margin: { t: 8, l: 50, r: 10, b: 80 },
+        plot_bgcolor: "white", paper_bgcolor: "white",
+    }, { responsive: true });
+}
+
+// Right panel: polar "wind-rose" — each spoke = one hour of the day
+function renderPolarPanel(errors) {
+    // Hour → theta mapping: 0 h at top (North), clockwise (15°/h)
+    const theta  = errors.map(e => e.hour * 15);
+    const labels = errors.map(e => e.label);
+    const overR  = errors.map(e => Math.max(0,  e.error));
+    const underR = errors.map(e => Math.max(0, -e.error));
+    const maxR   = Math.max(...errors.map(e => Math.abs(e.error)), 0.1);
+
+    Plotly.react("polar-chart", [
+        {
+            type: "barpolar", name: "Over-forecast",
+            r: overR, theta,
+            width: 13,          // degrees per bar — slightly less than 15 to leave a gap
+            marker: { color: "rgba(221,107,32,0.78)", line: { color: "white", width: 0.8 } },
+            hovertemplate: "%{text}: +%{r:.1f} EUR/MWh<extra></extra>",
+            text: labels,
+        },
+        {
+            type: "barpolar", name: "Under-forecast",
+            r: underR, theta,
+            width: 13,
+            marker: { color: "rgba(49,130,206,0.78)", line: { color: "white", width: 0.8 } },
+            hovertemplate: "%{text}: −%{r:.1f} EUR/MWh<extra></extra>",
+            text: labels,
+        },
+    ], {
+        polar: {
+            angularaxis: {
+                direction: "clockwise",
+                rotation: 90,           // 0° → North = 00:00
+                tickvals: [0, 45, 90, 135, 180, 225, 270, 315],
+                ticktext: ["00:00","03:00","06:00","09:00","12:00","15:00","18:00","21:00"],
+                tickfont: { size: 10 },
+                showgrid: true, gridcolor: "#e2e8f0",
+                linecolor: "#cbd5e0",
+            },
+            radialaxis: {
+                range: [0, maxR * 1.15],
+                tickfont: { size: 9 },
+                ticksuffix: " €",
+                showgrid: true, gridcolor: "#e2e8f0",
+            },
+        },
+        legend: { orientation: "h", y: -0.08, font: { size: 11 } },
+        margin: { t: 8, l: 10, r: 10, b: 50 },
+        paper_bgcolor: "white",
+    }, { responsive: true });
+}
+
+function renderErrorPanels(forecastRows, actualRows) {
+    const errors = computeErrors(forecastRows, actualRows);
+    if (errors.length === 0) return;
+
+    document.getElementById("bottom-panels").style.display = "flex";
+    renderDistPanel(errors);
+    renderPolarPanel(errors);
+}
+
+function hideErrorPanels() {
+    document.getElementById("bottom-panels").style.display = "none";
+}
+
+init();
+</script>
 
 </body>
-
 </html>

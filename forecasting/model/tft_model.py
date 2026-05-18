@@ -54,6 +54,9 @@ class TFTPriceModel:
         self.run_id: str | None = None
         self.run_dir: Path | None = None
 
+        # Tracks which weather source was used in the last predict() call
+        self.weather_source: str = "open-meteo"
+
     def _add_features(self, df: pd.DataFrame) -> pd.DataFrame:
         if not isinstance(df.index, pd.DatetimeIndex):
             raise ValueError("DataFrame index must be DatetimeIndex")
@@ -340,11 +343,20 @@ class TFTPriceModel:
             end=forecast_start,
         ).loc[history_start:forecast_start]
 
-        weather = load_forecast(
-            self.zone,
-            start=history_start,
-            end=forecast_end,
-        ).loc[history_start:forecast_end]
+        try:
+            weather = load_forecast(
+                self.zone,
+                start=history_start,
+                end=forecast_end,
+            ).loc[history_start:forecast_end]
+            self.weather_source = "open-meteo"
+        except Exception as e:
+            logger.warning(
+                "Open-Meteo unavailable (%s); falling back to ERA5 for zone=%s",
+                e, self.zone,
+            )
+            weather = load_era5(self.zone, history_start, forecast_end)
+            self.weather_source = "era5-fallback"
 
         df = weather.join(prices, how="left")
 
@@ -392,10 +404,13 @@ class TFTPriceModel:
 
         times = x["decoder_time_idx"][0]
         preds = raw_preds["prediction"][0]  # (H, 3)
+        n_steps = len(times)
+        timestamps = pd.date_range(forecast_start, periods=n_steps, freq="h")
         # Save results for web FastAPI
         df_predict = pd.DataFrame(
             {
                 "time_idx": times.cpu().numpy(),
+                "timestamp": timestamps.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "p10": preds[:, 0].cpu().numpy(),
                 "p50": preds[:, 1].cpu().numpy(),
                 "p90": preds[:, 2].cpu().numpy(),
