@@ -24,6 +24,14 @@ def upload_file(local_path: Path, s3_key: str):
     _s3.upload_file(str(local_path), S3_BUCKET_NAME, s3_key)
 
 
+def upload_dir(local_dir: Path, s3_prefix: str):
+    """Recursively upload all files under local_dir to s3_prefix/."""
+    for path in local_dir.rglob("*"):
+        if path.is_file():
+            rel = path.relative_to(local_dir)
+            upload_file(path, f"{s3_prefix}/{rel}")
+
+
 def list_zones() -> list[str]:
     """List all zone prefixes available in the S3 bucket."""
     paginator = _s3.get_paginator("list_objects_v2")

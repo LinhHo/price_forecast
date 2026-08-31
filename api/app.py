@@ -63,9 +63,39 @@ app.mount(
     name="artifacts",
 )
 
-# include dropdown list of zones
-app.include_router(zones.router, prefix="/zones")
+# import boto3
+# from forecasting.model.services.model_registry import get_model
 
+# s3 = boto3.client("s3")
+
+# s3.download_file(
+#     "price-forecast-tft-model",
+#     f"models/{zone}/model.ckpt",
+#     "/tmp/model.ckpt"
+# )
+
+# tft = get_model("/tmp/model.ckpt")
+
+# @app.get("/predict")
+# def predict(zone: str, date_to_predict: str):
+
+#     model_path = f"/tmp/{zone}_model.ckpt"
+
+#     s3.download_file(
+#         BUCKET_NAME,
+#         f"models/{zone}/model.ckpt",
+#         model_path
+#     )
+
+#     model = get_model(model_path)
+
+#     prediction = predict_next_24h(
+#         model=model,
+#         zone=zone,
+#         date=date_to_predict
+#     )
+
+#     return prediction
 
 # Run with
 # uvicorn api.app:app --reload
