@@ -26,7 +26,9 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 AUTOMATIC_DIR = PROJECT_ROOT / "automatic"
 
 # S3
-S3_BUCKET_NAME = "price-forecast-tft-model"
+S3_BUCKET_NAME = (
+    "price-forecast-tft-model-651147869189-eu-north-1-an"  # "price-forecast-tft-model"
+)
 S3_REGION = "eu-north-1"
 ENABLE_ADMIN_AUTH = False
 
