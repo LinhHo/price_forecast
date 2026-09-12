@@ -1,11 +1,12 @@
+from dotenv import load_dotenv
+load_dotenv()  # must be first so env vars are available to all imports below
+
+import os
 from fastapi import FastAPI
 from api.routes import train, predict, zones
 from config import setup_logging, AUTOMATIC_DIR
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-
-from dotenv import load_dotenv
-import os
 
 
 setup_logging()

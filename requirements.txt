@@ -10,3 +10,4 @@ pytorch-lightning
 pytorch-forecasting
 pandas
 numpy
+matplotlib
