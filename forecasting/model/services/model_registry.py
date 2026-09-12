@@ -1,139 +1,69 @@
+import time
+import logging
 from pathlib import Path
 from forecasting.model.tft_model import TFTPriceModel
-from infra.s3 import download_zone
+from infra.s3 import download_run
+from config import AUTOMATIC_DIR
 
-# import boto3
-from config import AUTOMATIC_DIR  # , LOCAL_MODEL_CACHE, S3_BUCKET_NAME
+logger = logging.getLogger(__name__)
 
 _MODEL_CACHE: dict[str, TFTPriceModel] = {}
+# zone -> (latest_run_id, checked_at) — re-check S3 every 5 minutes
+_S3_RUN_CACHE: dict[str, tuple[str | None, float]] = {}
+_S3_CHECK_TTL = 300
 
 
 def get_model(zone: str) -> TFTPriceModel:
-    if zone in _MODEL_CACHE:
-        return _MODEL_CACHE[zone]
+    """Load and cache the most recent trained model for a zone, checking S3 every 5 min."""
+    latest = _latest_s3_run(zone)
 
-    zone_dir = AUTOMATIC_DIR / zone
-    runs_dir = zone_dir / "runs"
+    cached = _MODEL_CACHE.get(zone)
+    if cached and (latest is None or cached.run_id == latest):
+        return cached
 
-    # Download if zone or runs are missing
-    if not runs_dir.exists():
-        download_zone(zone, AUTOMATIC_DIR)
+    if cached and latest:
+        logger.info("Newer model for zone=%s: %s → %s", zone, cached.run_id, latest)
 
-    run_id = _resolve_latest_run(zone_dir)
-    run_dir = runs_dir / run_id
+    run_id = latest or _resolve_latest_local_run(AUTOMATIC_DIR / zone)
+    run_dir = AUTOMATIC_DIR / zone / "runs" / run_id
 
-    # Safety check: ensure required artifacts exist
-    # Handle partial cache cases
     required = [
         run_dir / "model" / "tft.ckpt",
         run_dir / "training_dataset.pt",
         run_dir / "meta.json",
     ]
-
     if not all(p.exists() for p in required):
-        # re-download to repair partial cache
-        download_zone(zone, AUTOMATIC_DIR)
+        logger.info("Downloading run=%s for zone=%s from S3", run_id, zone)
+        download_run(zone, run_id, AUTOMATIC_DIR)
 
     model = TFTPriceModel.load(zone, run_id, base_dir=run_dir)
     _MODEL_CACHE[zone] = model
     return model
 
 
-def _resolve_latest_run(zone_dir: Path) -> str:
+def _latest_s3_run(zone: str) -> str | None:
+    """Return the most recent training run ID from S3, cached for _S3_CHECK_TTL seconds."""
+    cached_id, checked_at = _S3_RUN_CACHE.get(zone, (None, 0.0))
+    if time.time() - checked_at < _S3_CHECK_TTL:
+        return cached_id
+    try:
+        from infra.s3 import list_runs
+        runs = list_runs(zone)
+        latest = runs[-1] if runs else None
+        _S3_RUN_CACHE[zone] = (latest, time.time())
+        return latest
+    except Exception as e:
+        logger.warning("Could not list S3 runs for zone=%s: %s", zone, e)
+        _S3_RUN_CACHE[zone] = (cached_id, time.time())  # reset TTL, keep stale value
+        return cached_id
+
+
+def _resolve_latest_local_run(zone_dir: Path) -> str:
+    """Return the most recent run ID from the local filesystem."""
     runs_dir = zone_dir / "runs"
+    if not runs_dir.exists():
+        raise RuntimeError(f"No local runs found for zone {zone_dir.name}")
     runs = sorted(p.name for p in runs_dir.iterdir() if p.is_dir())
     if not runs:
         raise RuntimeError(f"No trained runs found for zone {zone_dir.name}")
     return runs[-1]
-
-
-# def get_model(zone: str) -> TFTPriceModel:
-#     if zone in _MODEL_CACHE:
-#         return _MODEL_CACHE[zone]
-
-#     zone_dir = AUTOMATIC_DIR / zone
-
-#     # If model artifacts are not present locally → pull from S3
-#     if not zone_dir.exists():
-#         download_zone(zone, AUTOMATIC_DIR)
-
-#     # Decide which run to load (for now: latest)
-#     run_id = _resolve_latest_run(zone_dir)
-#     run_dir = zone_dir / "runs" / run_id
-
-#     model = TFTPriceModel.load(zone, run_id, base_dir=run_dir)
-#     _MODEL_CACHE[zone] = model
-#     return model
-
-
-# def ensure_run_downloaded(zone: str, run_id: str) -> Path:
-#     local_run_dir = LOCAL_MODEL_CACHE / zone / "runs" / run_id
-#     if local_run_dir.exists():
-#         return local_run_dir
-
-#     local_run_dir.mkdir(parents=True, exist_ok=True)
-
-#     s3 = boto3.client("s3")
-
-#     prefix = f"{zone}/runs/{run_id}/"
-#     objects = s3.list_objects_v2(Bucket=S3_BUCKET_NAME, Prefix=prefix)
-
-#     for obj in objects.get("Contents", []):
-#         key = obj["Key"]
-#         rel = key.replace(prefix, "")
-#         local_path = local_run_dir / rel
-#         local_path.parent.mkdir(parents=True, exist_ok=True)
-
-#         s3.download_file(S3_BUCKET_NAME, key, str(local_path))
-
-#     return local_run_dir
-
-
-# from forecasting.model.tft_model import TFTPriceModel
-# from infra.s3 import download_run
-# from pathlib import Path
-# import threading
-
-# _MODEL_CACHE: dict[str, TFTPriceModel] = {}
-# _LOCK = threading.Lock()
-
-
-# def get_model(zone: str, run_id: str | None = None) -> TFTPriceModel:
-#     """
-#     Load and cache a TFTPriceModel for a zone.
-#     Thread-safe.
-#     """
-
-#     cache_key = f"{zone}:{run_id or 'latest'}"
-
-#     if cache_key in _MODEL_CACHE:
-#         return _MODEL_CACHE[cache_key]
-
-#     with _LOCK:
-#         if cache_key in _MODEL_CACHE:
-#             return _MODEL_CACHE[cache_key]
-
-#         run_path = download_run(zone, run_id)
-
-#         model = TFTPriceModel.load(
-#             zone=zone,
-#             run_id=run_path.name,
-#         )
-
-#         _MODEL_CACHE[cache_key] = model
-#         return model
-
-
-# from forecasting.model.tft_model import TFTPriceModel
-# from infra.s3 import download_dir
-# from pathlib import Path
-
-# LOCAL_MODEL_ROOT = Path("/tmp/models")
-
-
-# def load_model_from_s3(zone: str, run_id: str):
-#     local_dir = LOCAL_MODEL_ROOT / zone / run_id
-#     if not local_dir.exists():
-#         download_dir(f"{zone}/runs/{run_id}", local_dir)
-
-#     return TFTPriceModel.load(zone=zone, run_id=run_id)

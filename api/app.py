@@ -4,7 +4,7 @@ load_dotenv()  # must be first so env vars are available to all imports below
 import os
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
-from api.routes import train, predict, zones
+from api.routes import train, predict, zones, stats
 from config import setup_logging, AUTOMATIC_DIR
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -31,6 +31,7 @@ def health():
 app.include_router(train.router, prefix="/train")
 app.include_router(predict.router, prefix="/predict")
 app.include_router(zones.router, prefix="/zones")
+app.include_router(stats.router, prefix="/stats")
 
 # Serve the UI with FastAPI
 # app.mount("/", StaticFiles(directory="web", html=True), name="web")

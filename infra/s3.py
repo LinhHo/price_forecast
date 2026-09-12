@@ -1,4 +1,5 @@
 # infra/s3.py
+import json
 import boto3
 from pathlib import Path
 from config import S3_BUCKET_NAME, S3_REGION
@@ -7,11 +8,19 @@ _s3 = boto3.client("s3", region_name=S3_REGION)
 
 
 def download_zone(zone: str, local_dir: Path):
-    """
-    Download all model artifacts for a zone from S3 into local_dir
-    """
+    """Download all artifacts for a zone from S3 into local_dir."""
     prefix = f"{zone}/"
+    paginator = _s3.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=S3_BUCKET_NAME, Prefix=prefix):
+        for obj in page.get("Contents", []):
+            dest = local_dir / obj["Key"]
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            _s3.download_file(S3_BUCKET_NAME, obj["Key"], str(dest))
 
+
+def download_run(zone: str, run_id: str, local_dir: Path):
+    """Download artifacts for a single training run from S3."""
+    prefix = f"{zone}/runs/{run_id}/"
     paginator = _s3.get_paginator("list_objects_v2")
     for page in paginator.paginate(Bucket=S3_BUCKET_NAME, Prefix=prefix):
         for obj in page.get("Contents", []):
@@ -42,3 +51,46 @@ def list_zones() -> list[str]:
             if zone:
                 zones.append(zone)
     return sorted(zones)
+
+
+def list_runs(zone: str) -> list[str]:
+    """List all training run IDs for a zone from S3, sorted chronologically."""
+    paginator = _s3.get_paginator("list_objects_v2")
+    runs = []
+    for page in paginator.paginate(Bucket=S3_BUCKET_NAME, Prefix=f"{zone}/runs/", Delimiter="/"):
+        for p in page.get("CommonPrefixes", []):
+            run = p["Prefix"].rstrip("/").split("/")[-1]
+            if run:
+                runs.append(run)
+    return sorted(runs)
+
+
+def upload_inference_stats(zone: str, inference_id: str, stats: dict):
+    """Save inference accuracy stats JSON to S3 under {zone}/inferences/{inference_id}/stats.json."""
+    _s3.put_object(
+        Bucket=S3_BUCKET_NAME,
+        Key=f"{zone}/inferences/{inference_id}/stats.json",
+        Body=json.dumps(stats, indent=2).encode(),
+        ContentType="application/json",
+    )
+
+
+def list_inferences(zone: str) -> list[str]:
+    """List all inference IDs for a zone from S3, sorted chronologically."""
+    paginator = _s3.get_paginator("list_objects_v2")
+    ids = []
+    for page in paginator.paginate(Bucket=S3_BUCKET_NAME, Prefix=f"{zone}/inferences/", Delimiter="/"):
+        for p in page.get("CommonPrefixes", []):
+            iid = p["Prefix"].rstrip("/").split("/")[-1]
+            if iid:
+                ids.append(iid)
+    return sorted(ids)
+
+
+def get_inference_stats(zone: str, inference_id: str) -> dict:
+    """Download stats JSON for one inference from S3."""
+    obj = _s3.get_object(
+        Bucket=S3_BUCKET_NAME,
+        Key=f"{zone}/inferences/{inference_id}/stats.json",
+    )
+    return json.loads(obj["Body"].read())
