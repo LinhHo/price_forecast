@@ -1,13 +1,22 @@
-plotly
-boto3
-kaleido
-dotenv
-
 fastapi
 uvicorn
+python-dotenv
+boto3
+
+# data
+pandas
+numpy
+requests
+xarray
+python-dateutil
+
+# model
 torch
 pytorch-lightning
 pytorch-forecasting
-pandas
-numpy
+scikit-learn
+
+# plotting
 matplotlib
+plotly
+kaleido
