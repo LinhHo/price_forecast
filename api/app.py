@@ -3,6 +3,7 @@ load_dotenv()  # must be first so env vars are available to all imports below
 
 import os
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from api.routes import train, predict, zones
 from config import setup_logging, AUTOMATIC_DIR
 from fastapi.staticfiles import StaticFiles
@@ -19,7 +20,7 @@ app = FastAPI(title="Electricity Price Forecast API")
 
 @app.get("/")
 def root():
-    return {"status": "ok", "message": "Price forecast API is running"}
+    return FileResponse(WEB_DIR / "index.html")
 
 
 @app.get("/health")
