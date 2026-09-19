@@ -20,8 +20,8 @@ Forecast electricity price with a machine-learning model to inform when to charg
 Shown in a dashboard served via the API (`/dashboard`).
 
 - Predict price 24h ahead of the selected time, with an uncertainty band, as a timeseries plot:
-  - **Blue:** prediction, include the uncertainty band in light blue.
-  - **Orange:** ENTSO-E actual price, including the previous 7 days, and if available, the actual price of 24h from the selected time (i.e. selected time is >24h in the past).
+  - **Orange:** prediction, include the uncertainty band in light orange.
+  - **Blue:** ENTSO-E actual price, including the previous 7 days, and if available, the actual price of 24h from the selected time (i.e. selected time is >24h in the past).
 - *Planned:* statistics plot — MAE distribution (requires saving past-prediction results).
 - *Planned:* return two options for when to charge the EV; input = time needed to fully charge.
 
