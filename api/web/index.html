@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Electricity Price Forecast</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- [CHANGE 6] pinned Plotly version ("plotly-latest" is frozen at an old 1.x build) -->
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -15,18 +21,71 @@
             min-height: 100vh;
         }
 
+        /* ── Header + tabs ([CHANGE 5]) ──────────── */
         header {
             background: #1a365d;
             color: white;
-            padding: 14px 24px;
+            padding: 14px 24px 0;
+        }
+
+        .brand {
             display: flex;
             align-items: center;
             gap: 12px;
         }
-        header .icon { font-size: 1.5rem; }
-        header h1   { font-size: 1.25rem; font-weight: 600; }
-        header .subtitle { font-size: 0.8rem; opacity: 0.7; margin-top: 2px; }
 
+        .brand .icon {
+            font-size: 1.5rem;
+        }
+
+        .brand h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .brand .subtitle {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            margin-top: 12px;
+        }
+
+        .tab-btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+        }
+
+        .tab-btn.active {
+            background: #f0f4f8;
+            color: #1a365d;
+        }
+
+        .tab-btn:focus-visible {
+            outline: 2px solid #90cdf4;
+            outline-offset: -2px;
+        }
+
+        .tab-panel[hidden] {
+            display: none;
+        }
+
+        /* ── Page layout ─────────────────────────── */
         .layout {
             display: flex;
             gap: 20px;
@@ -36,7 +95,6 @@
             align-items: flex-start;
         }
 
-        /* ── Sidebar ─────────────────────────────── */
         .sidebar {
             width: 270px;
             flex-shrink: 0;
@@ -45,12 +103,29 @@
             gap: 14px;
         }
 
+        /* [CHANGE 1] main area is a fixed 2-column grid:
+           row 1 = timeseries (full width), row 2 = histogram | polar */
+        .main {
+            flex: 1;
+            min-width: 0;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 20px;
+        }
+
+        .span-2 {
+            grid-column: 1 / -1;
+        }
+
         .card {
             background: white;
             border-radius: 10px;
             padding: 18px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            min-width: 0;
+            /* grid/flex items must be allowed to shrink */
         }
+
         .card-title {
             font-size: 0.72rem;
             font-weight: 700;
@@ -62,8 +137,14 @@
             border-bottom: 1px solid #edf2f7;
         }
 
-        .field { margin-bottom: 12px; }
-        .field:last-child { margin-bottom: 0; }
+        .field {
+            margin-bottom: 12px;
+        }
+
+        .field:last-child {
+            margin-bottom: 0;
+        }
+
         .field label {
             display: block;
             font-size: 0.78rem;
@@ -72,7 +153,8 @@
             margin-bottom: 5px;
         }
 
-        input[type="date"], select {
+        input[type="date"],
+        select {
             width: 100%;
             padding: 7px 10px;
             border: 1px solid #e2e8f0;
@@ -81,15 +163,21 @@
             background: #f7fafc;
             color: #2d3748;
             outline: none;
-            transition: border-color 0.15s, background 0.15s;
             cursor: pointer;
         }
-        input[type="date"]:focus, select:focus {
+
+        input[type="date"]:focus,
+        select:focus {
             border-color: #4299e1;
             background: white;
-            box-shadow: 0 0 0 3px rgba(66,153,225,0.15);
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
         }
-        .hint { font-size: 0.73rem; color: #a0aec0; margin-top: 5px; }
+
+        .hint {
+            font-size: 0.73rem;
+            color: #a0aec0;
+            margin-top: 5px;
+        }
 
         .run-btn {
             width: 100%;
@@ -101,628 +189,791 @@
             font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.15s, opacity 0.15s;
         }
-        .run-btn:hover:not(:disabled) { background: #2c5282; }
-        .run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* stat cards */
+        .run-btn:hover:not(:disabled) {
+            background: #2c5282;
+        }
+
+        .run-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .stat-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             padding: 5px 0;
             border-bottom: 1px solid #f7fafc;
             font-size: 0.82rem;
         }
-        .stat-row:last-child { border-bottom: none; }
-        .stat-label { color: #718096; }
-        .stat-value { font-weight: 600; color: #2d3748; }
-        .stat-empty { color: #a0aec0; font-size: 0.8rem; text-align: center; padding: 8px 0; }
 
-        /* ── Main area ───────────────────────────── */
-        .main { flex: 1; min-width: 0; }
-
-        .chart-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        .stat-row:last-child {
+            border-bottom: none;
         }
-        .chart-header {
+
+        .stat-label {
+            color: #718096;
+        }
+
+        .stat-value {
+            font-weight: 600;
+        }
+
+        .chart-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .badges {
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 14px;
-            gap: 12px;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin: 4px 0 12px;
         }
-        .chart-header h2 { font-size: 1rem; font-weight: 600; color: #2d3748; }
 
-        .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
         .badge {
-            display: inline-flex; align-items: center; gap: 4px;
-            padding: 2px 8px; border-radius: 12px;
-            font-size: 0.7rem; font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
         }
-        .badge-forecast { background: #fff3e0; color: #c05621; }
-        .badge-actual   { background: #e8f5e9; color: #276749; }
-        .badge-era5     { background: #faf5ff; color: #6b46c1; }
+
+        .badge-forecast {
+            background: #fff3e0;
+            color: #c05621;
+        }
+
+        .badge-actual {
+            background: #e8f5e9;
+            color: #276749;
+        }
+
+        .badge-era5 {
+            background: #faf5ff;
+            color: #6b46c1;
+        }
 
         #status {
-            font-size: 0.82rem; padding: 9px 13px;
-            border-radius: 7px; margin-bottom: 14px; display: none;
-        }
-        .status-loading { background: #ebf8ff; color: #2b6cb0; }
-        .status-error   { background: #fff5f5; color: #c53030; }
-        .status-warn    { background: #fffbeb; color: #92400e; }
-        .status-ok      { background: #f0fff4; color: #276749; }
-
-        #chart-placeholder {
-            display: flex; align-items: center; justify-content: center;
-            min-height: 420px; color: #a0aec0; font-size: 0.9rem;
-            flex-direction: column; gap: 10px;
-        }
-        #chart-placeholder .big-icon { font-size: 3rem; opacity: 0.3; }
-
-        /* min-height keeps layout stable when placeholder is swapped for chart */
-        #chart { display: none; min-height: 420px; }
-
-        /* ── Stats sections — always visible ────── */
-        .stats-section {
-            border-radius: 10px;
-            padding: 16px 20px 20px;
-            margin-top: 20px;
-        }
-
-        /* Current forecast run — warm orange tint */
-        .stats-section.current-run {
-            background: #fffbf0;
-            border: 1px solid #f6ad55;
-        }
-        .stats-section.current-run .section-label {
-            color: #c05621;
-            border-color: #f6ad55;
-        }
-
-        /* Overall model history — cool blue tint */
-        .stats-section.overall {
-            background: #ebf8ff;
-            border: 1px solid #63b3ed;
-        }
-        .stats-section.overall .section-label {
-            color: #2b6cb0;
-            border-color: #63b3ed;
-        }
-
-        .section-label {
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin-bottom: 14px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid;
-        }
-
-        .stats-panels-row {
-            display: flex;
-            gap: 16px;
-        }
-        .stats-panel {
-            flex: 1;
-            min-width: 0;
-            background: white;
-            border-radius: 8px;
-            padding: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-        }
-        .panel-title {
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #718096;
-            margin-bottom: 10px;
-            padding-bottom: 7px;
-            border-bottom: 1px solid #edf2f7;
-        }
-        .panel-placeholder {
-            color: #a0aec0;
             font-size: 0.82rem;
-            text-align: center;
-            min-height: 180px;
+            padding: 9px 13px;
+            border-radius: 7px;
+            margin-bottom: 12px;
+        }
+
+        .status-loading {
+            background: #ebf8ff;
+            color: #2b6cb0;
+        }
+
+        .status-error {
+            background: #fff5f5;
+            color: #c53030;
+        }
+
+        .status-warn {
+            background: #fffbeb;
+            color: #92400e;
+        }
+
+        /* [CHANGE 1] Every plot lives in a fixed-size box.
+           The box owns the size; the Plotly div and the placeholder are
+           absolutely positioned *inside* it, so neither can push or float
+           over neighbouring cards. */
+        .plot-box {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .plot-box.tall {
+            height: 440px;
+        }
+
+        .plot-box.short {
+            height: 320px;
+        }
+
+        .plot {
+            position: absolute;
+            inset: 0;
+        }
+
+        .plot-empty {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 8px;
             padding: 20px;
+            background: white;
+            color: #a0aec0;
+            font-size: 0.85rem;
+            text-align: center;
         }
 
-        @media (max-width: 800px) {
-            .layout { flex-direction: column; }
-            .sidebar { width: 100%; }
-            .stats-panels-row { flex-direction: column; }
+        .plot-empty[hidden] {
+            display: none;
+        }
+
+        /* ── Performance tab ([CHANGE 5]) ────────── */
+        .perf-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .perf-table th,
+        .perf-table td {
+            text-align: right;
+            padding: 8px 10px;
+            border-bottom: 1px solid #edf2f7;
+            white-space: nowrap;
+        }
+
+        .perf-table th:first-child,
+        .perf-table td:first-child {
+            text-align: left;
+        }
+
+        .perf-table th {
+            font-size: 0.72rem;
+            color: #718096;
+            font-weight: 700;
+        }
+
+        .perf-table tbody tr {
+            cursor: pointer;
+        }
+
+        .perf-table tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        .perf-table tbody tr.selected {
+            background: #ebf8ff;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .main {
+                grid-template-columns: minmax(0, 1fr);
+            }
         }
     </style>
 </head>
+
 <body>
 
-<header>
-    <div class="icon">⚡</div>
-    <div>
-        <h1>Electricity Price Forecast</h1>
-        <div class="subtitle">24-hour day-ahead price · Temporal Fusion Transformer</div>
-    </div>
-</header>
-
-<div class="layout">
-
-    <!-- ── Sidebar ───────────────────────────────── -->
-    <aside class="sidebar">
-
-        <div class="card">
-            <div class="card-title">Forecast Window</div>
-            <div class="field">
-                <label>Date</label>
-                <input type="date" id="date">
-            </div>
-            <div class="field">
-                <label>Start Hour (UTC)</label>
-                <select id="hour"></select>
-                <div class="hint">The model predicts 24 h starting from this hour.</div>
+    <header>
+        <div class="brand">
+            <div class="icon">⚡</div>
+            <div>
+                <h1>Electricity Price Forecast</h1>
+                <div class="subtitle">24-hour day-ahead price · Temporal Fusion Transformer</div>
             </div>
         </div>
+        <!-- [CHANGE 5] tabs directly under the title -->
+        <nav class="tab-nav" role="tablist">
+            <button class="tab-btn active" id="tab-btn-forecast" role="tab" aria-selected="true"
+                onclick="switchTab('forecast')">Price 24h forecast</button>
+            <button class="tab-btn" id="tab-btn-performance" role="tab" aria-selected="false"
+                onclick="switchTab('performance')">Models' performance</button>
+        </nav>
+    </header>
 
-        <div class="card">
-            <div class="card-title">Model Selection</div>
-            <div class="field">
-                <label>Country / Zone</label>
-                <select id="zone"></select>
-                <div class="hint" id="zone-hint">Loading available models from AWS S3…</div>
-            </div>
-        </div>
+    <!-- ══════════════ TAB 1 — Price 24h forecast ══════════════ -->
+    <section id="tab-forecast" class="tab-panel" role="tabpanel">
+        <div class="layout">
 
-        <button class="run-btn" id="run-btn" onclick="runForecast()">Run Forecast →</button>
-
-        <!-- Card: accuracy for the currently displayed forecast slot -->
-        <div class="card" id="slot-stats-card" style="display:none">
-            <div class="card-title">This Slot — Accuracy</div>
-            <div class="stat-row">
-                <span class="stat-label">MAE</span>
-                <span class="stat-value" id="ss-mae">—</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">Mean bias</span>
-                <span class="stat-value" id="ss-bias">—</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">Over-forecast</span>
-                <span class="stat-value" id="ss-over">—</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">Under-forecast</span>
-                <span class="stat-value" id="ss-under">—</span>
-            </div>
-        </div>
-
-        <!-- Card: aggregate stats for all saved inferences of this zone's model -->
-        <div class="card" id="zone-stats-card">
-            <div class="card-title">All Forecasts — Model History</div>
-            <div id="zh-content">
-                <div class="stat-empty">Select a zone to load history.</div>
-            </div>
-        </div>
-
-    </aside>
-
-    <!-- ── Main ──────────────────────────────────── -->
-    <main class="main">
-
-        <!-- Timeseries chart -->
-        <div class="chart-card">
-            <div class="chart-header">
-                <div>
-                    <h2 id="chart-title">Configure a forecast and press Run</h2>
-                    <div class="badges" id="badges"></div>
-                </div>
-            </div>
-            <div id="status"></div>
-            <div id="chart-placeholder">
-                <div class="big-icon">📈</div>
-                <span>Your forecast chart will appear here</span>
-            </div>
-            <div id="chart"></div>
-        </div>
-
-        <!-- ── Current forecast run stats (orange) ── -->
-        <div class="stats-section current-run">
-            <div class="section-label">This Forecast Run — Error vs Actual</div>
-            <div class="stats-panels-row">
-                <div class="stats-panel">
-                    <div class="panel-title">Error Distribution (P50 − Actual)</div>
-                    <div id="run-dist-placeholder" class="panel-placeholder">
-                        Run a forecast for a past date to see the error distribution.
+            <aside class="sidebar">
+                <div class="card">
+                    <div class="card-title">Forecast Window</div>
+                    <div class="field">
+                        <label for="date">Date</label>
+                        <input type="date" id="date">
                     </div>
-                    <div id="run-dist-chart"></div>
-                </div>
-                <div class="stats-panel">
-                    <div class="panel-title">Hourly Error Pattern</div>
-                    <div id="run-polar-placeholder" class="panel-placeholder">
-                        Run a forecast for a past date to see the hourly error pattern.
+                    <div class="field">
+                        <label for="hour">Start Hour (UTC)</label>
+                        <select id="hour"></select>
+                        <div class="hint">The model predicts 24 h starting from this hour.</div>
                     </div>
-                    <div id="run-polar-chart"></div>
                 </div>
-            </div>
+
+                <div class="card">
+                    <div class="card-title">Model Selection</div>
+                    <div class="field">
+                        <label for="zone">Country / Zone</label>
+                        <select id="zone"></select>
+                        <div class="hint" id="zone-hint">Loading available models from AWS S3…</div>
+                    </div>
+                </div>
+
+                <button class="run-btn" id="run-btn" onclick="runForecast()">Run Forecast →</button>
+
+                <div class="card" id="slot-stats-card" hidden>
+                    <div class="card-title">This Slot — Accuracy</div>
+                    <div class="stat-row"><span class="stat-label">MAE</span><span class="stat-value"
+                            id="ss-mae">—</span></div>
+                    <div class="stat-row"><span class="stat-label">Mean bias</span><span class="stat-value"
+                            id="ss-bias">—</span></div>
+                    <div class="stat-row"><span class="stat-label">Over-forecast</span><span class="stat-value"
+                            id="ss-over">—</span></div>
+                    <div class="stat-row"><span class="stat-label">Under-forecast</span><span class="stat-value"
+                            id="ss-under">—</span></div>
+                </div>
+            </aside>
+
+            <main class="main">
+                <!-- Row 1: timeseries, full width -->
+                <div class="card span-2">
+                    <div class="chart-header">
+                        <h2 id="chart-title">Configure a forecast and press Run</h2>
+                        <div class="badges" id="badges"></div>
+                    </div>
+                    <div id="status" hidden></div>
+                    <div class="plot-box tall">
+                        <div class="plot-empty" id="chart-empty">
+                            <div style="font-size:3rem;opacity:0.3">📈</div>
+                            <span class="msg">Your forecast chart will appear here</span>
+                        </div>
+                        <div class="plot" id="chart"></div>
+                    </div>
+                </div>
+
+                <!-- Row 2, left: error histogram -->
+                <div class="card">
+                    <div class="card-title">Error Distribution (P50 − Actual)</div>
+                    <div class="plot-box short">
+                        <div class="plot-empty" id="run-dist-chart-empty"><span class="msg">Run a forecast for a past
+                                date to see the error distribution.</span></div>
+                        <div class="plot" id="run-dist-chart"></div>
+                    </div>
+                </div>
+
+                <!-- Row 2, right: polar -->
+                <div class="card">
+                    <div class="card-title">Hourly Error Pattern</div>
+                    <div class="plot-box short">
+                        <div class="plot-empty" id="run-polar-chart-empty"><span class="msg">Run a forecast for a past
+                                date to see the hourly error pattern.</span></div>
+                        <div class="plot" id="run-polar-chart"></div>
+                    </div>
+                </div>
+            </main>
         </div>
+    </section>
 
-        <!-- ── Overall model history stats (blue) ── -->
-        <div class="stats-section overall">
-            <div class="section-label">Overall Model Performance — All Saved Forecasts</div>
-            <div class="stats-panels-row">
-                <div class="stats-panel">
-                    <div class="panel-title">Error Distribution (P50 − Actual)</div>
-                    <div id="all-dist-placeholder" class="panel-placeholder">
-                        No inference history saved yet for this zone.
+    <!-- ══════════════ TAB 2 — Models' performance ══════════════ -->
+    <section id="tab-performance" class="tab-panel" role="tabpanel" hidden>
+        <div class="layout">
+
+            <aside class="sidebar">
+                <div class="card">
+                    <div class="card-title">Model</div>
+                    <div class="field">
+                        <label for="perf-zone">Country / Zone</label>
+                        <select id="perf-zone"></select>
+                        <div class="hint">Or click a row in the comparison table.</div>
                     </div>
-                    <div id="all-dist-chart"></div>
                 </div>
-                <div class="stats-panel">
-                    <div class="panel-title">Hourly Error Pattern</div>
-                    <div id="all-polar-placeholder" class="panel-placeholder">
-                        No inference history saved yet for this zone.
+                <div class="card">
+                    <div class="card-title">Selected Model — History</div>
+                    <div id="perf-summary">
+                        <div class="hint">No model selected.</div>
                     </div>
-                    <div id="all-polar-chart"></div>
                 </div>
-            </div>
+            </aside>
+
+            <main class="main">
+                <!-- Row 1: all models side by side -->
+                <div class="card span-2">
+                    <div class="card-title">All Models — Saved Forecasts vs ENTSO-E Actual</div>
+                    <div class="table-scroll">
+                        <table class="perf-table">
+                            <thead>
+                                <tr>
+                                    <th>Zone</th>
+                                    <th>Forecasts saved</th>
+                                    <th>MAE (€/MWh)</th>
+                                    <th>Mean bias (€/MWh)</th>
+                                    <th>Over-forecast rate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="perf-table-body">
+                                <tr>
+                                    <td colspan="5" class="hint">Loading…</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Row 2: selected model's error plots -->
+                <div class="card">
+                    <div class="card-title">Error Distribution (P50 − Actual)</div>
+                    <div class="plot-box short">
+                        <div class="plot-empty" id="all-dist-chart-empty"><span class="msg">No forecast history saved
+                                yet for this zone.</span></div>
+                        <div class="plot" id="all-dist-chart"></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Mean Error by Hour of Day</div>
+                    <div class="plot-box short">
+                        <div class="plot-empty" id="all-polar-chart-empty"><span class="msg">No forecast history saved
+                                yet for this zone.</span></div>
+                        <div class="plot" id="all-polar-chart"></div>
+                    </div>
+                </div>
+            </main>
         </div>
+    </section>
 
-    </main>
-</div>
+    <script>
+        /* ── Country label lookup ─────────────────────── */
+        const ZONE_LABELS = {
+            AL: "Albania", AT: "Austria", BE: "Belgium", BG: "Bulgaria",
+            CH: "Switzerland", CY: "Cyprus", CZ: "Czech Republic",
+            "DE-AT-LU": "Germany-Austria-Luxembourg", "DE-LU": "Germany-Luxembourg",
+            DK1: "Denmark West", DK2: "Denmark East", EE: "Estonia",
+            ES: "Spain", FI: "Finland", FR: "France", GB: "Great Britain",
+            GR: "Greece", HR: "Croatia", HU: "Hungary", "IE-SEM": "Ireland",
+            "IT-North": "Italy North", "IT-South": "Italy South",
+            LT: "Lithuania", LU: "Luxembourg", LV: "Latvia",
+            ME: "Montenegro", MK: "North Macedonia", NL: "Netherlands",
+            NO1: "Norway East", NO2: "Norway South", NO3: "Norway Central",
+            NO4: "Norway North", NO5: "Norway West",
+            PL: "Poland", PT: "Portugal", RO: "Romania", RS: "Serbia",
+            SE1: "Sweden North", SE2: "Sweden N-Central",
+            SE3: "Sweden S-Central", SE4: "Sweden South",
+            SI: "Slovenia", SK: "Slovakia", TR: "Turkey", "UA-IPS": "Ukraine"
+        };
+        const zoneName = z => ZONE_LABELS[z] ? `${ZONE_LABELS[z]} (${z})` : z;
 
-<script>
-/* ── Country label lookup ─────────────────────── */
-const ZONE_LABELS = {
-    AL:"Albania", AT:"Austria", BE:"Belgium", BG:"Bulgaria",
-    CH:"Switzerland", CY:"Cyprus", CZ:"Czech Republic",
-    "DE-AT-LU":"Germany-Austria-Luxembourg", "DE-LU":"Germany-Luxembourg",
-    DK1:"Denmark West", DK2:"Denmark East", EE:"Estonia",
-    ES:"Spain", FI:"Finland", FR:"France", GB:"Great Britain",
-    GR:"Greece", HR:"Croatia", HU:"Hungary", "IE-SEM":"Ireland",
-    "IT-North":"Italy North", "IT-South":"Italy South",
-    LT:"Lithuania", LU:"Luxembourg", LV:"Latvia",
-    ME:"Montenegro", MK:"North Macedonia", NL:"Netherlands",
-    NO1:"Norway East", NO2:"Norway South", NO3:"Norway Central",
-    NO4:"Norway North", NO5:"Norway West",
-    PL:"Poland", PT:"Portugal", RO:"Romania", RS:"Serbia",
-    SE1:"Sweden North", SE2:"Sweden N-Central",
-    SE3:"Sweden S-Central", SE4:"Sweden South",
-    SI:"Slovenia", SK:"Slovakia", TR:"Turkey", "UA-IPS":"Ukraine"
-};
+        /* ═════════ [CHANGE 2] Safe plotting helpers ═════════
+           - never draw into a hidden container (it would get Plotly's
+             default 700×450 size and spill out of its card);
+           - figures for hidden containers are queued and drawn when
+             their tab becomes visible;
+           - showing a placeholder purges the old figure. */
+        const PLOT_CONFIG = { responsive: false, displaylogo: false };
+        const pendingFigures = {};              // divId -> {traces, layout}
 
-/* ── Init ─────────────────────────────────────── */
-function init() {
-    document.getElementById("date").value = new Date().toISOString().slice(0, 10);
+        function isVisible(el) { return el.offsetParent !== null && el.clientWidth > 0; }
 
-    const hourSel = document.getElementById("hour");
-    for (let h = 0; h < 24; h++) {
-        const opt = document.createElement("option");
-        opt.value = h;
-        opt.text  = `${String(h).padStart(2,"0")}:00 UTC`;
-        hourSel.appendChild(opt);
-    }
-
-    document.getElementById("zone").addEventListener("change", e => loadZoneHistory(e.target.value));
-    loadZones();
-}
-
-/* ── Load available zones ─────────────────────── */
-async function loadZones() {
-    const hint = document.getElementById("zone-hint");
-    const sel  = document.getElementById("zone");
-    try {
-        const zones = await fetch("/zones").then(r => r.json());
-        sel.innerHTML = "";
-        zones.forEach(z => {
-            const opt = document.createElement("option");
-            opt.value = z;
-            opt.text  = ZONE_LABELS[z] ? `${ZONE_LABELS[z]} (${z})` : z;
-            sel.appendChild(opt);
-        });
-        hint.textContent = `${zones.length} model${zones.length !== 1 ? "s" : ""} available`;
-        if (zones.length > 0) loadZoneHistory(zones[0]);
-    } catch {
-        hint.textContent = "Could not load zones — check server.";
-    }
-}
-
-/* ── Zone history (overall model stats + charts) ─ */
-async function loadZoneHistory(zone) {
-    // Sidebar card
-    const el = document.getElementById("zh-content");
-    el.innerHTML = '<div class="stat-empty">Loading…</div>';
-
-    // Overall chart placeholders
-    showPlaceholders("all", "Loading history…");
-
-    try {
-        const s = await fetch(`/stats/${zone}`).then(r => r.json());
-
-        if (!s.n_inferences) {
-            el.innerHTML = '<div class="stat-empty">No inference history yet.</div>';
-            showPlaceholders("all", "No inference history saved yet for this zone.");
-            return;
-        }
-
-        // Sidebar numbers
-        const bias    = s.mean_error != null ? (s.mean_error >= 0 ? "+" : "") + s.mean_error + " €/MWh" : "—";
-        const overPct = s.over_rate  != null ? (s.over_rate * 100).toFixed(0) + "%" : "—";
-        el.innerHTML = `
-            <div class="stat-row"><span class="stat-label">Inferences saved</span><span class="stat-value">${s.n_inferences}</span></div>
-            <div class="stat-row"><span class="stat-label">MAE</span><span class="stat-value">${s.mae ?? "—"} €/MWh</span></div>
-            <div class="stat-row"><span class="stat-label">Mean bias</span><span class="stat-value">${bias}</span></div>
-            <div class="stat-row"><span class="stat-label">Over-forecast rate</span><span class="stat-value">${overPct}</span></div>
-        `;
-
-        // Overall charts (blue section)
-        if (s.errors && s.errors.length > 0) {
-            const errors = s.errors.map(e => ({
-                hour:  e.hour_utc,
-                label: String(e.hour_utc).padStart(2,"0") + ":00",
-                error: e.error,
-            }));
-            hidePlaceholders("all");
-            renderDistChart("all-dist-chart",  errors);
-            renderPolarChart("all-polar-chart", errors);
-        } else {
-            showPlaceholders("all", "No error data available.");
-        }
-    } catch {
-        el.innerHTML = '<div class="stat-empty">Could not load history.</div>';
-        showPlaceholders("all", "Could not load history.");
-    }
-}
-
-/* ── Slot accuracy sidebar card ───────────────── */
-function updateSlotStatsCard(stats) {
-    if (!stats) {
-        document.getElementById("slot-stats-card").style.display = "none";
-        return;
-    }
-    const bias      = stats.mean_error;
-    const biasStr   = (bias >= 0 ? "+" : "") + bias.toFixed(2) + " €/MWh";
-    const biasColor = bias > 0 ? "#c05621" : bias < 0 ? "#2b6cb0" : "#276749";
-
-    document.getElementById("ss-mae").textContent   = stats.mae + " €/MWh";
-    document.getElementById("ss-bias").textContent  = biasStr;
-    document.getElementById("ss-bias").style.color  = biasColor;
-    document.getElementById("ss-over").textContent  = `${stats.n_over} / ${stats.n} h`;
-    document.getElementById("ss-under").textContent = `${stats.n_under} / ${stats.n} h`;
-    document.getElementById("slot-stats-card").style.display = "block";
-}
-
-/* ── Status / badge helpers ───────────────────── */
-function setStatus(msg, type) {
-    const el = document.getElementById("status");
-    if (!msg) { el.style.display = "none"; return; }
-    el.textContent = msg; el.className = `status-${type}`; el.style.display = "block";
-}
-
-function setBadges(hasForecast, hasActual, era5Fallback) {
-    const el = document.getElementById("badges");
-    el.innerHTML = "";
-    if (hasForecast)  el.innerHTML += `<span class="badge badge-forecast">▪ Forecast (P10/P50/P90)</span>`;
-    if (hasActual)    el.innerHTML += `<span class="badge badge-actual">▪ Actual (ENTSOE)</span>`;
-    if (era5Fallback) el.innerHTML += `<span class="badge badge-era5">▪ Weather: ERA5 fallback</span>`;
-}
-
-/* ── Panel placeholder helpers ────────────────── */
-function showPlaceholders(prefix, msg) {
-    [`${prefix}-dist-placeholder`, `${prefix}-polar-placeholder`].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) { el.textContent = msg; el.style.display = "flex"; }
-    });
-}
-function hidePlaceholders(prefix) {
-    [`${prefix}-dist-placeholder`, `${prefix}-polar-placeholder`].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = "none";
-    });
-}
-
-/* ── Run forecast ─────────────────────────────── */
-async function runForecast() {
-    const zone = document.getElementById("zone").value;
-    const date = document.getElementById("date").value;
-    const hour = parseInt(document.getElementById("hour").value);
-
-    if (!zone || !date) { setStatus("Please select a zone and a date.", "error"); return; }
-
-    const btn = document.getElementById("run-btn");
-    btn.disabled = true; btn.textContent = "Running…";
-    setStatus("Fetching forecast…", "loading");
-
-    const dateTime = `${date}T${String(hour).padStart(2,"0")}:00:00`;
-
-    try {
-        const res = await fetch(`/predict/${zone}?date_to_predict=${dateTime}`);
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || `HTTP ${res.status}`);
-        }
-        const payload = await res.json();
-
-        const label = ZONE_LABELS[zone] || zone;
-        document.getElementById("chart-title").textContent =
-            `${label} (${zone}) — 24 h starting ${date} ${String(hour).padStart(2,"0")}:00 UTC`;
-
-        const hasActual    = Array.isArray(payload.actual) && payload.actual.length > 0;
-        const era5Fallback = payload.weather_source === "era5-fallback";
-
-        setBadges(true, hasActual, era5Fallback);
-        renderTimeseriesChart(payload.data, payload.actual || []);
-
-        if (hasActual) {
-            const runErrors = computeErrors(payload.data, payload.actual);
-            if (runErrors.length > 0) {
-                hidePlaceholders("run");
-                renderDistChart("run-dist-chart",  runErrors);
-                renderPolarChart("run-polar-chart", runErrors);
-            } else {
-                showPlaceholders("run", "Not enough matching data for error analysis.");
+        function drawPlot(id, traces, layout) {
+            const el = document.getElementById(id);
+            document.getElementById(`${id}-empty`).hidden = true;
+            const fullLayout = Object.assign(
+                { autosize: true, paper_bgcolor: "white", plot_bgcolor: "white" },
+                layout
+            );
+            if (!isVisible(el)) {
+                pendingFigures[id] = { traces, layout: fullLayout };
+                return;
             }
-            updateSlotStatsCard(payload.slot_stats);
-            loadZoneHistory(zone);   // refresh overall — new inference was just saved
-        } else {
-            showPlaceholders("run", "Actual prices not yet available for this forecast window.");
-            updateSlotStatsCard(null);
+            delete pendingFigures[id];
+            Plotly.react(el, traces, fullLayout, PLOT_CONFIG);
         }
 
-        if (era5Fallback && !hasActual) {
-            setStatus("⚠ Weather: ERA5 reanalysis (Open-Meteo unavailable). Forecast quality may differ.", "warn");
-        } else if (era5Fallback) {
-            setStatus("⚠ Weather input: ERA5 reanalysis (Open-Meteo unavailable for this date).", "warn");
-        } else if (!hasActual && payload.actual !== null) {
-            setStatus("Actual ENTSOE prices not available for this zone/date — showing forecast only.", "warn");
-        } else {
-            setStatus(null);
+        function clearPlot(id, msg) {
+            const el = document.getElementById(id);
+            delete pendingFigures[id];
+            Plotly.purge(el);
+            const empty = document.getElementById(`${id}-empty`);
+            if (msg) empty.querySelector(".msg").textContent = msg;
+            empty.hidden = false;
         }
 
-    } catch (e) {
-        setStatus(`Error: ${e.message}`, "error");
-    } finally {
-        btn.disabled = false; btn.textContent = "Run Forecast →";
-    }
-}
-
-/* ── Timeseries chart ─────────────────────────── */
-function renderTimeseriesChart(forecastRows, actualRows) {
-    const fX  = forecastRows.map(d => d.timestamp || d.time_idx);
-    const p10 = forecastRows.map(d => d.p10);
-    const p50 = forecastRows.map(d => d.p50);
-    const p90 = forecastRows.map(d => d.p90);
-
-    const traces = [
-        {
-            x: [...fX, ...fX.slice().reverse()],
-            y: [...p90, ...p10.slice().reverse()],
-            fill: "toself", fillcolor: "rgba(237,137,54,0.18)",
-            line: { color: "transparent" }, name: "P10–P90 band",
-            showlegend: true, type: "scatter", hoverinfo: "skip"
-        },
-        {
-            x: fX, y: p50, mode: "lines", name: "Forecast P50",
-            line: { color: "rgba(221,107,32,1)", width: 2.5 }, type: "scatter"
+        function flushPendingFigures() {
+            Object.keys(pendingFigures).forEach(id => {
+                if (isVisible(document.getElementById(id))) {
+                    const { traces, layout } = pendingFigures[id];
+                    drawPlot(id, traces, layout);
+                }
+            });
         }
-    ];
 
-    if (actualRows.length > 0) {
-        traces.push({
-            x: actualRows.map(d => d.timestamp), y: actualRows.map(d => d.price),
-            mode: "lines+markers", name: "Actual (ENTSOE)",
-            line: { color: "rgba(49,130,206,1)", width: 2 },
-            marker: { size: 5 }, type: "scatter"
+        // [CHANGE 3] resize each plot when *its box* changes size (window resize,
+        // sidebar collapse on mobile, tab switch), not only on window resize.
+        const resizeObserver = new ResizeObserver(entries => {
+            entries.forEach(entry => {
+                const plot = entry.target.querySelector(".plot");
+                if (plot && plot.data && isVisible(plot)) Plotly.Plots.resize(plot);
+            });
         });
-    }
+        document.querySelectorAll(".plot-box").forEach(box => resizeObserver.observe(box));
 
-    const useDateTime = forecastRows.length > 0 && forecastRows[0].timestamp;
-    Plotly.react("chart", traces, {
-        xaxis: { title: "Time (UTC)", type: useDateTime ? "date" : "linear",
-                 showgrid: true, gridcolor: "#f0f0f0",
-                 tickformat: useDateTime ? "%d %b\n%H:%M" : undefined },
-        yaxis: { title: "EUR / MWh", showgrid: true, gridcolor: "#f0f0f0", zeroline: false },
-        legend: { orientation: "h", y: -0.18, x: 0 },
-        margin: { t: 10, l: 60, r: 20, b: 80 },
-        plot_bgcolor: "white", paper_bgcolor: "white", hovermode: "x unified"
-    }, { responsive: true });
+        /* ── Tabs ([CHANGE 5]) ────────────────────────── */
+        function switchTab(name) {
+            ["forecast", "performance"].forEach(t => {
+                const active = t === name;
+                document.getElementById(`tab-${t}`).hidden = !active;
+                const btn = document.getElementById(`tab-btn-${t}`);
+                btn.classList.toggle("active", active);
+                btn.setAttribute("aria-selected", active);
+            });
+            // wait one frame so the newly shown panel has real dimensions
+            requestAnimationFrame(() => {
+                flushPendingFigures();
+                if (name === "performance") loadPerformance();
+            });
+        }
 
-    document.getElementById("chart-placeholder").style.display = "none";
-    document.getElementById("chart").style.display = "block";
-}
+        /* ── Init ─────────────────────────────────────── */
+        let ZONES = [];
 
-/* ── Error helpers ────────────────────────────── */
-function computeErrors(forecastRows, actualRows) {
-    const actualMap = {};
-    actualRows.forEach(d => { actualMap[d.timestamp] = d.price; });
-    return forecastRows
-        .filter(d => d.timestamp && actualMap[d.timestamp] != null && d.p50 != null)
-        .map(d => ({
-            hour:  new Date(d.timestamp).getUTCHours(),
-            label: String(new Date(d.timestamp).getUTCHours()).padStart(2,"0") + ":00",
-            error: +(d.p50 - actualMap[d.timestamp]).toFixed(2),
-        }));
-}
+        function init() {
+            document.getElementById("date").value = new Date().toISOString().slice(0, 10);
+            const hourSel = document.getElementById("hour");
+            for (let h = 0; h < 24; h++) {
+                hourSel.add(new Option(`${String(h).padStart(2, "0")}:00 UTC`, h));
+            }
+            document.getElementById("perf-zone").addEventListener("change", e => selectPerfZone(e.target.value));
+            loadZones();
+        }
 
-/* ── Shared chart renderers (used for both run + overall) ── */
-function renderDistChart(divId, errors) {
-    const vals    = errors.map(e => e.error);
-    const pos     = vals.filter(v => v >= 0);
-    const neg     = vals.filter(v => v  < 0);
-    const maxAbs  = Math.max(...vals.map(Math.abs), 0.1);
-    const binSize = +(maxAbs / 5).toFixed(1) || 1;
+        async function loadZones() {
+            const hint = document.getElementById("zone-hint");
+            try {
+                ZONES = await fetch("/zones").then(r => r.json());
+                ["zone", "perf-zone"].forEach(id => {
+                    const sel = document.getElementById(id);
+                    sel.innerHTML = "";
+                    ZONES.forEach(z => sel.add(new Option(zoneName(z), z)));
+                });
+                hint.textContent = `${ZONES.length} model${ZONES.length !== 1 ? "s" : ""} available`;
+            } catch {
+                hint.textContent = "Could not load zones — check server.";
+            }
+        }
 
-    const traces = [];
-    if (neg.length) traces.push({
-        x: neg, type: "histogram", name: "Under-forecast",
-        marker: { color: "rgba(49,130,206,0.75)" },
-        xbins: { size: binSize }, autobinx: false,
-    });
-    if (pos.length) traces.push({
-        x: pos, type: "histogram", name: "Over-forecast",
-        marker: { color: "rgba(221,107,32,0.75)" },
-        xbins: { size: binSize }, autobinx: false,
-    });
+        /* ── Status / badges / slot card ──────────────── */
+        function setStatus(msg, type) {
+            const el = document.getElementById("status");
+            el.hidden = !msg;
+            if (msg) { el.textContent = msg; el.className = `status-${type}`; }
+        }
 
-    Plotly.react(divId, traces, {
-        barmode: "overlay",
-        xaxis: { title: "Error (EUR/MWh)", zeroline: true, zerolinecolor: "#718096",
-                 zerolinewidth: 1.5, showgrid: true, gridcolor: "#f0f0f0" },
-        yaxis: { title: "Frequency", showgrid: true, gridcolor: "#f0f0f0" },
-        legend: { orientation: "h", y: -0.25, font: { size: 11 } },
-        margin: { t: 8, l: 50, r: 10, b: 80 },
-        plot_bgcolor: "white", paper_bgcolor: "white",
-    }, { responsive: true });
-}
+        function setBadges(hasForecast, hasActual, era5Fallback) {
+            const el = document.getElementById("badges");
+            el.innerHTML = "";
+            if (hasForecast) el.innerHTML += `<span class="badge badge-forecast">▪ Forecast (P10/P50/P90)</span>`;
+            if (hasActual) el.innerHTML += `<span class="badge badge-actual">▪ Actual (ENTSOE)</span>`;
+            if (era5Fallback) el.innerHTML += `<span class="badge badge-era5">▪ Weather: ERA5 fallback</span>`;
+        }
 
-function renderPolarChart(divId, errors) {
-    const theta  = errors.map(e => e.hour * 15);
-    const labels = errors.map(e => e.label);
-    const overR  = errors.map(e => Math.max(0,  e.error));
-    const underR = errors.map(e => Math.max(0, -e.error));
-    const maxR   = Math.max(...errors.map(e => Math.abs(e.error)), 0.1);
+        function updateSlotStatsCard(stats) {
+            const card = document.getElementById("slot-stats-card");
+            if (!stats) { card.hidden = true; return; }
+            const bias = stats.mean_error;
+            const biasEl = document.getElementById("ss-bias");
+            document.getElementById("ss-mae").textContent = stats.mae + " €/MWh";
+            biasEl.textContent = (bias >= 0 ? "+" : "") + bias.toFixed(2) + " €/MWh";
+            biasEl.style.color = bias > 0 ? "#c05621" : bias < 0 ? "#2b6cb0" : "#276749";
+            document.getElementById("ss-over").textContent = `${stats.n_over} / ${stats.n} h`;
+            document.getElementById("ss-under").textContent = `${stats.n_under} / ${stats.n} h`;
+            card.hidden = false;
+        }
 
-    Plotly.react(divId, [
-        {
-            type: "barpolar", name: "Over-forecast",
-            r: overR, theta, width: 13,
-            marker: { color: "rgba(221,107,32,0.78)", line: { color: "white", width: 0.8 } },
-            hovertemplate: "%{text}: +%{r:.1f} EUR/MWh<extra></extra>", text: labels,
-        },
-        {
-            type: "barpolar", name: "Under-forecast",
-            r: underR, theta, width: 13,
-            marker: { color: "rgba(49,130,206,0.78)", line: { color: "white", width: 0.8 } },
-            hovertemplate: "%{text}: −%{r:.1f} EUR/MWh<extra></extra>", text: labels,
-        },
-    ], {
-        polar: {
-            angularaxis: {
-                direction: "clockwise", rotation: 90,
-                tickvals: [0,45,90,135,180,225,270,315],
-                ticktext: ["00:00","03:00","06:00","09:00","12:00","15:00","18:00","21:00"],
-                tickfont: { size: 10 }, showgrid: true, gridcolor: "#e2e8f0", linecolor: "#cbd5e0",
-            },
-            radialaxis: {
-                range: [0, maxR * 1.15], tickfont: { size: 9 },
-                ticksuffix: " €", showgrid: true, gridcolor: "#e2e8f0",
-            },
-        },
-        legend: { orientation: "h", y: -0.1, font: { size: 11 } },
-        margin: { t: 8, l: 10, r: 10, b: 50 },
-        paper_bgcolor: "white",
-    }, { responsive: true });
-}
+        /* ── Run forecast ─────────────────────────────── */
+        let forecastSeq = 0;   // [CHANGE 4] ignore responses from superseded runs
 
-init();
-</script>
+        async function runForecast() {
+            const zone = document.getElementById("zone").value;
+            const date = document.getElementById("date").value;
+            const hour = parseInt(document.getElementById("hour").value);
+            if (!zone || !date) { setStatus("Please select a zone and a date.", "error"); return; }
 
+            const seq = ++forecastSeq;
+            const btn = document.getElementById("run-btn");
+            btn.disabled = true; btn.textContent = "Running…";
+            setStatus("Fetching forecast…", "loading");
+
+            const hh = String(hour).padStart(2, "0");
+            try {
+                const res = await fetch(`/predict/${zone}?date_to_predict=${date}T${hh}:00:00`);
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || `HTTP ${res.status}`);
+                }
+                const payload = await res.json();
+                if (seq !== forecastSeq) return;           // a newer run has started
+
+                document.getElementById("chart-title").textContent =
+                    `${zoneName(zone)} — 24 h starting ${date} ${hh}:00 UTC`;
+
+                const actual = payload.actual || [];
+                const hasActual = actual.length > 0;
+                const era5Fallback = payload.weather_source === "era5-fallback";
+
+                setBadges(true, hasActual, era5Fallback);
+                renderTimeseriesChart(payload.data, actual);
+
+                const runErrors = hasActual ? computeErrors(payload.data, actual) : [];
+                if (runErrors.length > 0) {
+                    renderDistChart("run-dist-chart", runErrors);
+                    renderPolarChart("run-polar-chart", runErrors);
+                    updateSlotStatsCard(payload.slot_stats);
+                    perfStale = true;                      // a new inference was saved on S3
+                } else {
+                    const msg = hasActual
+                        ? "Not enough matching data for error analysis."
+                        : "Actual prices not yet available for this forecast window.";
+                    clearPlot("run-dist-chart", msg);
+                    clearPlot("run-polar-chart", msg);
+                    updateSlotStatsCard(null);
+                }
+
+                if (era5Fallback) {
+                    setStatus("⚠ Weather input: ERA5 reanalysis (Open-Meteo unavailable for this date).", "warn");
+                } else if (!hasActual && payload.actual !== null) {
+                    setStatus("Actual ENTSOE prices not available for this zone/date — showing forecast only.", "warn");
+                } else {
+                    setStatus(null);
+                }
+            } catch (e) {
+                if (seq === forecastSeq) setStatus(`Error: ${e.message}`, "error");
+            } finally {
+                if (seq === forecastSeq) { btn.disabled = false; btn.textContent = "Run Forecast →"; }
+            }
+        }
+
+        /* ── Performance tab ([CHANGE 5]) ─────────────── */
+        let perfStats = {};        // zone -> /stats/{zone} payload (or null)
+        let perfStale = true;      // refetch next time the tab is opened
+        let perfSeq = 0;
+        let perfZone = null;
+
+        async function loadPerformance() {
+            if (!perfZone) perfZone = document.getElementById("zone").value || ZONES[0];
+            if (!perfStale) { renderPerfTable(); selectPerfZone(perfZone); return; }
+
+            const seq = ++perfSeq;
+            document.getElementById("perf-table-body").innerHTML =
+                `<tr><td colspan="5" class="hint">Loading…</td></tr>`;
+
+            const results = await Promise.all(ZONES.map(z =>
+                fetch(`/stats/${z}`).then(r => r.ok ? r.json() : null).catch(() => null)
+            ));
+            if (seq !== perfSeq) return;
+
+            perfStats = Object.fromEntries(ZONES.map((z, i) => [z, results[i]]));
+            perfStale = false;
+            renderPerfTable();
+            selectPerfZone(perfZone);
+        }
+
+        const fmt = (v, d = 2) => (v == null ? "—" : Number(v).toFixed(d));
+
+        function renderPerfTable() {
+            const body = document.getElementById("perf-table-body");
+            if (ZONES.length === 0) {
+                body.innerHTML = `<tr><td colspan="5" class="hint">No trained models found on S3.</td></tr>`;
+                return;
+            }
+            body.innerHTML = ZONES.map(z => {
+                const s = perfStats[z];
+                const has = s && s.n_inferences;
+                const bias = has && s.mean_error != null
+                    ? (s.mean_error >= 0 ? "+" : "") + fmt(s.mean_error) : "—";
+                return `<tr data-zone="${z}" class="${z === perfZone ? "selected" : ""}">
+            <td>${zoneName(z)}</td>
+            <td>${has ? s.n_inferences : 0}</td>
+            <td>${has ? fmt(s.mae) : "—"}</td>
+            <td>${bias}</td>
+            <td>${has && s.over_rate != null ? (s.over_rate * 100).toFixed(0) + "%" : "—"}</td>
+        </tr>`;
+            }).join("");
+            body.querySelectorAll("tr[data-zone]").forEach(tr =>
+                tr.addEventListener("click", () => selectPerfZone(tr.dataset.zone)));
+        }
+
+        function selectPerfZone(zone) {
+            if (!zone) return;
+            perfZone = zone;
+            document.getElementById("perf-zone").value = zone;
+            document.querySelectorAll("#perf-table-body tr[data-zone]").forEach(tr =>
+                tr.classList.toggle("selected", tr.dataset.zone === zone));
+
+            const s = perfStats[zone];
+            const summary = document.getElementById("perf-summary");
+            if (!s || !s.n_inferences) {
+                summary.innerHTML = `<div class="hint">No forecast history saved yet for ${zoneName(zone)}.</div>`;
+                clearPlot("all-dist-chart", "No forecast history saved yet for this zone.");
+                clearPlot("all-polar-chart", "No forecast history saved yet for this zone.");
+                return;
+            }
+            summary.innerHTML = `
+        <div class="stat-row"><span class="stat-label">Forecasts saved</span><span class="stat-value">${s.n_inferences}</span></div>
+        <div class="stat-row"><span class="stat-label">MAE</span><span class="stat-value">${fmt(s.mae)} €/MWh</span></div>
+        <div class="stat-row"><span class="stat-label">Mean bias</span><span class="stat-value">${s.mean_error >= 0 ? "+" : ""}${fmt(s.mean_error)} €/MWh</span></div>
+        <div class="stat-row"><span class="stat-label">Over-forecast rate</span><span class="stat-value">${s.over_rate != null ? (s.over_rate * 100).toFixed(0) + "%" : "—"}</span></div>`;
+
+            const errors = (s.errors || []).map(e => ({ hour: e.hour_utc, error: e.error }));
+            if (errors.length === 0) {
+                clearPlot("all-dist-chart", "No error data available.");
+                clearPlot("all-polar-chart", "No error data available.");
+                return;
+            }
+            renderDistChart("all-dist-chart", errors);
+            renderPolarChart("all-polar-chart", meanErrorByHour(errors));
+        }
+
+        /* ── Error helpers ────────────────────────────── */
+        const hourLabel = h => String(h).padStart(2, "0") + ":00";
+
+        function computeErrors(forecastRows, actualRows) {
+            const actualMap = {};
+            actualRows.forEach(d => { actualMap[d.timestamp] = d.price; });
+            return forecastRows
+                .filter(d => d.timestamp && actualMap[d.timestamp] != null && d.p50 != null)
+                .map(d => ({
+                    hour: new Date(d.timestamp).getUTCHours(),
+                    error: +(d.p50 - actualMap[d.timestamp]).toFixed(2),
+                }));
+        }
+
+        // History has many errors per hour; one bar per hour (the mean) keeps the
+        // polar plot readable instead of stacking dozens of bars at the same angle.
+        function meanErrorByHour(errors) {
+            const acc = {};
+            errors.forEach(e => {
+                (acc[e.hour] ??= { sum: 0, n: 0 });
+                acc[e.hour].sum += e.error; acc[e.hour].n += 1;
+            });
+            return Object.keys(acc).map(Number).sort((a, b) => a - b)
+                .map(h => ({ hour: h, error: +(acc[h].sum / acc[h].n).toFixed(2) }));
+        }
+
+        /* ── Chart renderers ──────────────────────────── */
+        function renderTimeseriesChart(forecastRows, actualRows) {
+            const fX = forecastRows.map(d => d.timestamp || d.time_idx);
+            const p10 = forecastRows.map(d => d.p10);
+            const p50 = forecastRows.map(d => d.p50);
+            const p90 = forecastRows.map(d => d.p90);
+
+            const traces = [
+                {
+                    x: [...fX, ...fX.slice().reverse()],
+                    y: [...p90, ...p10.slice().reverse()],
+                    fill: "toself", fillcolor: "rgba(237,137,54,0.18)",
+                    line: { color: "transparent" }, name: "P10–P90 band",
+                    type: "scatter", hoverinfo: "skip"
+                },
+                {
+                    x: fX, y: p50, mode: "lines", name: "Forecast P50",
+                    line: { color: "rgba(221,107,32,1)", width: 2.5 }, type: "scatter"
+                }
+            ];
+            if (actualRows.length > 0) {
+                traces.push({
+                    x: actualRows.map(d => d.timestamp), y: actualRows.map(d => d.price),
+                    mode: "lines+markers", name: "Actual (ENTSOE)",
+                    line: { color: "rgba(49,130,206,1)", width: 2 },
+                    marker: { size: 5 }, type: "scatter"
+                });
+            }
+
+            const useDateTime = forecastRows.length > 0 && forecastRows[0].timestamp;
+            drawPlot("chart", traces, {
+                xaxis: {
+                    title: { text: "Time (UTC)" }, type: useDateTime ? "date" : "linear",
+                    gridcolor: "#f0f0f0", tickformat: useDateTime ? "%d %b\n%H:%M" : undefined
+                },
+                yaxis: { title: { text: "EUR / MWh" }, gridcolor: "#f0f0f0", zeroline: false },
+                legend: { orientation: "h", y: -0.2, x: 0 },
+                margin: { t: 10, l: 60, r: 20, b: 80 },
+                hovermode: "x unified"
+            });
+        }
+
+        function renderDistChart(divId, errors) {
+            const vals = errors.map(e => e.error);
+            const maxAbs = Math.max(...vals.map(Math.abs), 0.1);
+            const binSize = +(maxAbs / 5).toFixed(1) || 1;
+            const edge = Math.ceil(maxAbs / binSize) * binSize;
+            const neg = vals.filter(v => v < 0);
+            const pos = vals.filter(v => v >= 0);
+
+            // bins anchored at 0 so under/over bars never share a bin across zero
+            const traces = [];
+            if (neg.length) traces.push({
+                x: neg, type: "histogram", name: "Under-forecast (P50 < actual)",
+                marker: { color: "rgba(49,130,206,0.75)" },
+                xbins: { start: -edge, end: 0, size: binSize }, autobinx: false,
+            });
+            if (pos.length) traces.push({
+                x: pos, type: "histogram", name: "Over-forecast (P50 > actual)",
+                marker: { color: "rgba(221,107,32,0.75)" },
+                xbins: { start: 0, end: edge + binSize, size: binSize }, autobinx: false,
+            });
+
+            drawPlot(divId, traces, {
+                barmode: "overlay",
+                xaxis: {
+                    title: { text: "Forecast error (EUR/MWh)" }, zeroline: true,
+                    zerolinecolor: "#718096", zerolinewidth: 1.5, gridcolor: "#f0f0f0"
+                },
+                yaxis: { title: { text: "Frequency" }, gridcolor: "#f0f0f0" },
+                legend: { orientation: "h", y: -0.3, font: { size: 11 } },
+                margin: { t: 8, l: 50, r: 10, b: 80 },
+            });
+        }
+
+        function renderPolarChart(divId, errors) {
+            const theta = errors.map(e => e.hour * 15);
+            const labels = errors.map(e => hourLabel(e.hour));
+            const maxR = Math.max(...errors.map(e => Math.abs(e.error)), 0.1);
+
+            drawPlot(divId, [
+                {
+                    type: "barpolar", name: "Over-forecast",
+                    r: errors.map(e => Math.max(0, e.error)), theta, width: 13, text: labels,
+                    marker: { color: "rgba(221,107,32,0.78)", line: { color: "white", width: 0.8 } },
+                    hovertemplate: "%{text}: +%{r:.1f} EUR/MWh<extra></extra>",
+                },
+                {
+                    type: "barpolar", name: "Under-forecast",
+                    r: errors.map(e => Math.max(0, -e.error)), theta, width: 13, text: labels,
+                    marker: { color: "rgba(49,130,206,0.78)", line: { color: "white", width: 0.8 } },
+                    hovertemplate: "%{text}: −%{r:.1f} EUR/MWh<extra></extra>",
+                },
+            ], {
+                polar: {
+                    angularaxis: {
+                        direction: "clockwise", rotation: 90,
+                        tickvals: [0, 45, 90, 135, 180, 225, 270, 315],
+                        ticktext: ["00:00", "03:00", "06:00", "09:00", "12:00", "15:00", "18:00", "21:00"],
+                        tickfont: { size: 10 }, gridcolor: "#e2e8f0", linecolor: "#cbd5e0",
+                    },
+                    radialaxis: {
+                        range: [0, maxR * 1.15], tickfont: { size: 9 },
+                        ticksuffix: " €", gridcolor: "#e2e8f0"
+                    },
+                },
+                legend: { orientation: "h", y: -0.1, font: { size: 11 } },
+                margin: { t: 20, l: 30, r: 30, b: 50 },
+            });
+        }
+
+        init();
+    </script>
 </body>
+
 </html>
