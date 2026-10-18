@@ -34,3 +34,10 @@ AWS credentials must be configured (via `~/.aws/credentials` or environment vari
 ## Training
 
 Training runs in Colab (not via the API). See `training/train_colab.py`.
+
+## Tests
+To test that the code runs well, run
+
+```
+conda run -n demand python -m pytest tests/ -v
+```
