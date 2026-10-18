@@ -1,5 +1,8 @@
 This module forecasts electricity price for a selected zone using Temporal Fusion Transformer (TFT) model, using weather data.
 
+![ScreenShot-timeseries](/figs/price-forecast-time-seres.png)
+![ScreenShot-modelperformance](/figs/price-forecast-model-performance.png)
+
 ## Web UI
 
 Start the API server:
